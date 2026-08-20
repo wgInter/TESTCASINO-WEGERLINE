@@ -9,6 +9,7 @@ const { requireAuth, requireAdmin } = require('../authMiddleware');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const API_KEY = process.env.ODDS_API_KEY;
+const CRON_SECRET = process.env.CRON_SECRET;
 
 app.use(cors());
 app.use(express.json());
@@ -19,6 +20,10 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 
 if (!API_KEY) {
   console.warn('⚠️ Falta ODDS_API_KEY en el archivo .env');
+}
+
+if (!CRON_SECRET) {
+  console.warn('⚠️ Falta CRON_SECRET en el archivo .env — /api/cron/sync/:sportKey rechazará todo');
 }
 
 const cache = new Map();
@@ -159,99 +164,127 @@ app.get('/api/eventos', async (req, res) => {
   res.json(data);
 });
 
-// POST /api/admin/sync/:sportKey — trae deportes+eventos+cuotas reales desde
+// syncSport(sportKey, options) — trae deportes+eventos+cuotas reales desde
 // The Odds API y los guarda/actualiza en deportes, eventos, mercados y cuotas.
-// (solo admin — esto consume tu cuota de The Odds API)
-app.post('/api/admin/sync/:sportKey', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const { sportKey } = req.params;
-    const { region = 'eu', markets = 'h2h', oddsFormat = 'decimal' } = req.query;
+// Extraída como función independiente para poder llamarla tanto desde la
+// ruta de admin (JWT) como desde la ruta de cron (CRON_SECRET).
+async function syncSport(sportKey, { region = 'eu', markets = 'h2h', oddsFormat = 'decimal' } = {}) {
+  const oddsEvents = await oddsRequest(`/sports/${sportKey}/odds`, {
+    apiKey: API_KEY,
+    regions: region,
+    markets,
+    oddsFormat,
+  });
 
-    const oddsEvents = await oddsRequest(`/sports/${sportKey}/odds`, {
-      apiKey: API_KEY,
-      regions: region,
-      markets,
-      oddsFormat,
-    });
+  // upsert del deporte (clave = sportKey de The Odds API)
+  const { data: deporte, error: deporteError } = await supabaseAdmin
+    .from('deportes')
+    .upsert({ clave: sportKey, nombre: sportKey }, { onConflict: 'clave' })
+    .select()
+    .single();
+  if (deporteError) throw deporteError;
 
-    // upsert del deporte (clave = sportKey de The Odds API)
-    const { data: deporte, error: deporteError } = await supabaseAdmin
-      .from('deportes')
-      .upsert({ clave: sportKey, nombre: sportKey }, { onConflict: 'clave' })
-      .select()
-      .single();
-    if (deporteError) throw deporteError;
+  let eventosCreados = 0, mercadosCreados = 0, cuotasCreadas = 0;
 
-    let eventosCreados = 0, mercadosCreados = 0, cuotasCreadas = 0;
+  for (const ev of oddsEvents) {
+    const { error: eventoError } = await supabaseAdmin
+      .from('eventos')
+      .upsert({
+        id: ev.id,
+        deporte_id: deporte.id,
+        equipo_local: ev.home_team,
+        equipo_visitante: ev.away_team,
+        fecha_inicio: ev.commence_time,
+        estado: 'programado',
+        actualizado_en: new Date().toISOString(),
+      }, { onConflict: 'id' });
+    if (eventoError) throw eventoError;
+    eventosCreados++;
 
-    for (const ev of oddsEvents) {
-      const { error: eventoError } = await supabaseAdmin
-        .from('eventos')
-        .upsert({
-          id: ev.id,
-          deporte_id: deporte.id,
-          equipo_local: ev.home_team,
-          equipo_visitante: ev.away_team,
-          fecha_inicio: ev.commence_time,
-          estado: 'programado',
-          actualizado_en: new Date().toISOString(),
-        }, { onConflict: 'id' });
-      if (eventoError) throw eventoError;
-      eventosCreados++;
+    for (const bookmaker of ev.bookmakers || []) {
+      for (const mkt of bookmaker.markets || []) {
+        // un "mercado" por evento+clave (ej: h2h). Si ya existe, lo reusamos.
+        let { data: mercado, error: mercadoSelError } = await supabaseAdmin
+          .from('mercados')
+          .select('id')
+          .eq('evento_id', ev.id)
+          .eq('clave', mkt.key)
+          .maybeSingle();
+        if (mercadoSelError) throw mercadoSelError;
 
-      for (const bookmaker of ev.bookmakers || []) {
-        for (const mkt of bookmaker.markets || []) {
-          // un "mercado" por evento+clave (ej: h2h). Si ya existe, lo reusamos.
-          let { data: mercado, error: mercadoSelError } = await supabaseAdmin
+        if (!mercado) {
+          const { data: nuevoMercado, error: mercadoInsError } = await supabaseAdmin
             .from('mercados')
+            .insert({ evento_id: ev.id, clave: mkt.key, descripcion: mkt.key })
             .select('id')
-            .eq('evento_id', ev.id)
-            .eq('clave', mkt.key)
+            .single();
+          if (mercadoInsError) throw mercadoInsError;
+          mercado = nuevoMercado;
+          mercadosCreados++;
+        }
+
+        for (const outcome of mkt.outcomes || []) {
+          // una cuota por mercado + casa de apuestas + selección
+          const { data: existente } = await supabaseAdmin
+            .from('cuotas')
+            .select('id')
+            .eq('mercado_id', mercado.id)
+            .eq('casa_apuestas', bookmaker.title)
+            .eq('nombre_seleccion', outcome.name)
             .maybeSingle();
-          if (mercadoSelError) throw mercadoSelError;
 
-          if (!mercado) {
-            const { data: nuevoMercado, error: mercadoInsError } = await supabaseAdmin
-              .from('mercados')
-              .insert({ evento_id: ev.id, clave: mkt.key, descripcion: mkt.key })
-              .select('id')
-              .single();
-            if (mercadoInsError) throw mercadoInsError;
-            mercado = nuevoMercado;
-            mercadosCreados++;
-          }
-
-          for (const outcome of mkt.outcomes || []) {
-            // una cuota por mercado + casa de apuestas + selección
-            const { data: existente } = await supabaseAdmin
+          if (existente) {
+            await supabaseAdmin
               .from('cuotas')
-              .select('id')
-              .eq('mercado_id', mercado.id)
-              .eq('casa_apuestas', bookmaker.title)
-              .eq('nombre_seleccion', outcome.name)
-              .maybeSingle();
-
-            if (existente) {
-              await supabaseAdmin
-                .from('cuotas')
-                .update({ valor: outcome.price, actualizado_en: new Date().toISOString() })
-                .eq('id', existente.id);
-            } else {
-              await supabaseAdmin.from('cuotas').insert({
-                mercado_id: mercado.id,
-                casa_apuestas: bookmaker.title,
-                nombre_seleccion: outcome.name,
-                valor: outcome.price,
-                actualizado_en: new Date().toISOString(),
-              });
-              cuotasCreadas++;
-            }
+              .update({ valor: outcome.price, actualizado_en: new Date().toISOString() })
+              .eq('id', existente.id);
+          } else {
+            await supabaseAdmin.from('cuotas').insert({
+              mercado_id: mercado.id,
+              casa_apuestas: bookmaker.title,
+              nombre_seleccion: outcome.name,
+              valor: outcome.price,
+              actualizado_en: new Date().toISOString(),
+            });
+            cuotasCreadas++;
           }
         }
       }
     }
+  }
 
-    res.json({ eventosCreados, mercadosCreados, cuotasCreadas });
+  return { eventosCreados, mercadosCreados, cuotasCreadas };
+}
+
+// POST /api/admin/sync/:sportKey — versión para uso manual/admin desde el
+// navegador o PowerShell. Requiere JWT de un usuario con rol admin.
+// (solo admin — esto consume tu cuota de The Odds API)
+app.post('/api/admin/sync/:sportKey', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { sportKey } = req.params;
+    const { region, markets, oddsFormat } = req.query;
+    const resultado = await syncSport(sportKey, { region, markets, oddsFormat });
+    res.json(resultado);
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message });
+  }
+});
+
+// POST /api/cron/sync/:sportKey — versión para Vercel Cron Jobs.
+// No usa JWT de usuario: Vercel llama a los crons con
+// "Authorization: Bearer $CRON_SECRET" automáticamente cuando la env var
+// CRON_SECRET está configurada en el proyecto, así que validamos contra eso.
+app.post('/api/cron/sync/:sportKey', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
+  try {
+    const { sportKey } = req.params;
+    const resultado = await syncSport(sportKey);
+    res.json(resultado);
   } catch (error) {
     console.error(error);
     res.status(502).json({ error: error.message });
