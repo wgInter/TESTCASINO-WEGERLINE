@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WAGERLINE — Apuestas en vivo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root{
+  --bg-0:#0A0D12;--bg-1:#111621;--bg-2:#171E2C;--surface:#1C2433;
+  --border:#2A3346;--text-hi:#F2F5FA;--text-mid:#9AA6BC;--text-low:#5D6A82;
+  --accent-green:#2CE68F;--accent-red:#FF4C6A;--accent-violet:#8B6CFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg-0);color:var(--text-hi);font-family:Inter,sans-serif}
+.mono{font-family:'JetBrains Mono',monospace}.display{font-family:'Space Grotesk',sans-serif}
+.ticker-wrap{background:linear-gradient(90deg,var(--bg-1),#0D1420);border-bottom:1px solid var(--border);overflow:hidden;height:38px;display:flex;align-items:center}
+.ticker-track{display:flex;gap:36px;white-space:nowrap;animation:scroll-left 38s linear infinite;padding-left:100%}
+@keyframes scroll-left{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+.tick-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-mid)}
+.tick-item b{color:var(--text-hi)}.tick-item .odd{color:var(--accent-green);font-weight:700}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 32px;border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}.logo-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent-green),var(--accent-violet));display:flex;align-items:center;justify-content:center;font-weight:700;color:#0A0D12}
+.logo-text{font-family:'Space Grotesk';font-weight:700;font-size:19px}.logo-text span{color:var(--accent-green)}
+.nav-links{display:flex;gap:28px}.nav-links a{color:var(--text-mid);text-decoration:none;font-size:14px}.nav-links a.active{color:var(--accent-green)}
+.nav-actions{display:flex;gap:10px;align-items:center}.balance-pill{background:var(--surface);border:1px solid var(--border);padding:7px 12px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:6px}
+.balance-pill .mono{color:var(--accent-green);font-weight:700}.btn{padding:9px 18px;border-radius:8px;font-size:14px;font-weight:600;border:none;cursor:pointer}
+.btn-ghost{background:transparent;color:var(--text-hi);border:1px solid var(--border)}.btn-primary{background:var(--accent-green);color:#08130D}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.hero{padding:44px 32px 36px;background:radial-gradient(ellipse 900px 400px at 15% -10%,rgba(44,230,143,.14),transparent 60%),radial-gradient(ellipse 700px 400px at 100% 0%,rgba(139,108,255,.12),transparent 60%),var(--bg-1);border-bottom:1px solid var(--border)}
+.hero-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:36px;align-items:center;max-width:1280px;margin:auto}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;color:var(--accent-red);font-size:12px;font-weight:700;text-transform:uppercase;margin-bottom:14px}
+.dot-live{width:7px;height:7px;border-radius:50%;background:var(--accent-red);animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.hero h1{font-size:44px;line-height:1.05;margin-bottom:14px}.hero h1 .grad{background:linear-gradient(90deg,var(--accent-green),var(--accent-violet));-webkit-background-clip:text;color:transparent}
+.hero p{color:var(--text-mid);font-size:15px;max-width:440px;margin-bottom:22px;line-height:1.55}.hero-cta{display:flex;gap:12px}
+.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:22px}.feat-top,.feat-teams{display:flex;justify-content:space-between;align-items:center}.feat-teams{margin:18px 0}.feat-league{color:var(--text-low);font-size:12px}.live-badge{display:flex;align-items:center;gap:6px;background:rgba(255,76,106,.12);color:var(--accent-red);font-size:11px;font-weight:700;padding:4px 9px;border-radius:20px}
+.team{display:flex;flex-direction:column;align-items:center;gap:8px;width:35%}.crest{width:46px;height:46px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}.team-name{font-size:13px;font-weight:600;text-align:center}.score{font-family:'JetBrains Mono';font-size:22px;font-weight:700}
+.odds-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}.odd-btn{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer}.odd-btn:hover,.odds-mini .o:hover{border-color:var(--accent-green);background:rgba(44,230,143,.06)}
+.odd-btn .lbl{font-size:11px;color:var(--text-low);margin-bottom:4px}.odd-btn .val{font-family:'JetBrains Mono';font-weight:700;font-size:15px;color:var(--accent-green)}
+section{max-width:1280px;margin:auto;padding:38px 32px}.sec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}.sec-head h2{font-size:20px}.sec-head a{color:var(--accent-green);font-size:13px;text-decoration:none}
+.sport-tabs{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap}.sport-tab{padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-mid);cursor:pointer}.sport-tab.active{background:var(--accent-green);color:#08130D}
+.live-strip{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px}.mini-card{min-width:260px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}.mini-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.mini-league{font-size:11px;color:var(--text-low)}.mini-teams{font-size:13px;font-weight:600;margin-bottom:3px}.mini-odds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.mini-odds div{background:var(--bg-2);border-radius:7px;text-align:center;padding:6px 2px;font-family:'JetBrains Mono';font-size:12px;font-weight:600;cursor:pointer}
+.match-table{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}.match-row{display:grid;grid-template-columns:190px 1fr 260px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);gap:12px}.match-row:last-child{border-bottom:none}.match-time{font-size:12px;color:var(--text-low)}.match-time b{display:block;color:var(--text-hi);font-size:13px}.match-teams{display:flex;flex-direction:column;gap:3px}.match-teams .t{font-size:14px;font-weight:600}.match-teams .vs{font-size:11px;color:var(--text-low)}.odds-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.odds-mini .o{background:var(--bg-2);border:1px solid var(--border);border-radius:8px;text-align:center;padding:8px 4px;cursor:pointer}.odds-mini .o .l{font-size:10px;color:var(--text-low);margin-bottom:3px}.odds-mini .o .v{font-family:'JetBrains Mono';font-weight:700;font-size:13px}
+.bet-slip{position:fixed;right:24px;bottom:24px;width:360px;max-height:75vh;background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.45);z-index:1000;overflow:hidden}
+.bet-slip-header{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border)}.bet-slip-header strong{display:block}.bet-slip-header span{color:var(--text-low);font-size:11px}.bet-clear{border:none;background:transparent;color:var(--accent-red);cursor:pointer}
+.bet-selections{max-height:300px;overflow-y:auto}.bet-empty{padding:30px 18px;text-align:center;color:var(--text-low);font-size:13px}.bet-item{padding:14px 16px;border-bottom:1px solid var(--border)}.bet-item-top{display:flex;justify-content:space-between;gap:10px}.bet-match{font-size:12px;font-weight:600}.bet-market{margin-top:5px;color:var(--text-low);font-size:11px}.bet-price{font-family:'JetBrains Mono';color:var(--accent-green);font-weight:700}.bet-remove{margin-top:8px;border:none;background:transparent;color:var(--text-low);cursor:pointer;font-size:11px}
+.bet-summary{padding:16px;border-top:1px solid var(--border)}.bet-summary>div{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.bet-summary span{color:var(--text-mid);font-size:12px}.bet-summary strong{font-family:'JetBrains Mono'}.bet-summary input{width:110px;padding:8px;border-radius:7px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-hi);text-align:right}.possible-win strong{color:var(--accent-green)}.bet-button{width:100%;margin-top:8px}
+footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;color:var(--text-low);font-size:12px}
+.modal-overlay{position:fixed;inset:0;background:rgba(5,7,10,.72);display:flex;align-items:center;justify-content:center;z-index:2000}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px;width:340px}
+.modal h3{margin-bottom:4px;font-family:'Space Grotesk'}
+.modal .sub{color:var(--text-low);font-size:12px;margin-bottom:18px}
+.modal label{display:block;font-size:12px;color:var(--text-mid);margin-bottom:6px}
+.modal input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-2);color:var(--text-hi);margin-bottom:14px;font-size:14px}
+.modal-actions{display:flex;gap:10px;margin-top:4px}
+.modal-actions .btn{flex:1}
+.modal-switch{margin-top:14px;text-align:center;font-size:12px;color:var(--text-mid)}
+.modal-switch a{color:var(--accent-green);cursor:pointer}
+.modal-error{font-size:12px;margin-bottom:12px;display:none;line-height:1.4}
+@media(max-width:880px){.hero-grid{grid-template-columns:1fr}.nav-links{display:none}.match-row{grid-template-columns:1fr}.bet-slip{right:10px;left:10px;width:auto;bottom:10px}}
+</style>
+</head>
+<body>
+
+<div class="ticker-wrap"><div class="ticker-track" id="tickerTrack"></div></div>
+
+<nav>
+  <div class="logo"><div class="logo-mark">W</div><div class="logo-text">WAGER<span>LINE</span></div></div>
+  <div class="nav-links">
+    <a href="#" class="active">En Vivo</a><a href="#">Deportes</a><a href="#">Casino</a><a href="#">Promociones</a><a href="#">Mis Apuestas</a>
+  </div>
+  <div class="nav-actions">
+    <div class="balance-pill" id="balancePill" style="display:none">💰 <span class="mono" id="balanceAmount">$0.00</span></div>
+    <button class="btn btn-ghost" id="loginBtn">Iniciar sesión</button>
+    <button class="btn btn-primary" id="signupBtn">Registrarse</button>
+    <button class="btn btn-ghost" id="logoutBtn" style="display:none">Cerrar sesión</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-eyebrow"><span class="dot-live"></span> <span id="liveCount">Cargando eventos...</span></div>
+      <h1 class="display">Apuesta al <span class="grad">segundo</span>, no al partido</h1>
+      <p>Cuotas y eventos sincronizados en Supabase a través de nuestro backend.</p>
+      <div class="hero-cta"><button class="btn btn-primary btn-lg" onclick="document.getElementById('liveStrip').scrollIntoView({behavior:'smooth'})">Ver partidos en vivo</button><button class="btn btn-ghost btn-lg" onclick="document.getElementById('matchTable').scrollIntoView({behavior:'smooth'})">Explorar mercados</button></div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-top"><span class="live-badge"><span class="dot-live"></span> <span id="featStatus">CARGANDO</span></span><span class="feat-league" id="featLeague">Fútbol</span></div>
+      <div class="feat-teams">
+        <div class="team"><div class="crest" id="featHomeCrest">---</div><div class="team-name" id="featHome">Cargando...</div></div>
+        <div class="score" id="liveScore">VS</div>
+        <div class="team"><div class="crest" id="featAwayCrest">---</div><div class="team-name" id="featAway">Cargando...</div></div>
+      </div>
+      <div class="odds-row" id="featOdds"></div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="sport-tabs"><div class="sport-tab active">⚽ Fútbol</div><div class="sport-tab">🏀 Basketball</div><div class="sport-tab">🎾 Tenis</div><div class="sport-tab">🏈 NFL</div><div class="sport-tab">🥊 MMA</div><div class="sport-tab">🏎️ F1</div></div>
+  <div class="sec-head"><h2>En vivo ahora</h2><a href="#">Actualizar automáticamente</a></div>
+  <div class="live-strip" id="liveStrip"></div>
+</section>
+
+<section>
+  <div class="sec-head"><h2>Próximos partidos</h2><a href="#">Datos sincronizados desde The Odds API</a></div>
+  <div class="match-table" id="matchTable"></div>
+</section>
+
+<aside id="betSlip" class="bet-slip">
+  <div class="bet-slip-header">
+    <div><strong>Tu apuesta</strong><span id="betCount">0 selecciones</span></div>
+    <button id="clearBets" class="bet-clear">Limpiar</button>
+  </div>
+  <div id="betSelections" class="bet-selections"><div class="bet-empty">Selecciona una cuota para agregarla aquí.</div></div>
+  <div class="bet-summary">
+    <div><span>Cuota total</span><strong id="totalOdds">1.00</strong></div>
+    <div><span>Importe</span><input id="stakeInput" type="number" min="0" step="100" value="10000"></div>
+    <div class="possible-win"><span>Ganancia potencial</span><strong id="potentialWin">$10,000.00</strong></div>
+    <button id="placeBet" class="btn btn-primary bet-button">Realizar apuesta</button>
+  </div>
+</aside>
+
+<div id="authModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3 id="authTitle">Iniciar sesión</h3>
+    <p class="sub" id="authSub">Entra con tu correo y contraseña.</p>
+    <div class="modal-error" id="authError"></div>
+    <label>Correo</label>
+    <input type="email" id="authEmail" placeholder="tu@correo.com" autocomplete="email">
+    <label>Contraseña</label>
+    <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="authCancel">Cancelar</button>
+      <button class="btn btn-primary" id="authSubmit">Entrar</button>
+    </div>
+    <div class="modal-switch" id="authSwitch">¿No tienes cuenta? <a id="authToggle">Regístrate</a></div>
+  </div>
+</div>
+
+<footer>WAGERLINE — proyecto de desarrollo · Datos deportivos mediante The Odds API</footer>
+
+<script>
+const BACKEND_URL='';
+
+// --- Configuración de Supabase (cliente, solo lectura pública + auth) ---
+// La URL del proyecto y la anon key están pensadas para ir en el frontend:
+// no son secretas, la seguridad real la da Row Level Security en Supabase.
+// Reemplaza SUPABASE_ANON_KEY con la tuya: Dashboard > Project Settings > API > "anon public".
+const SUPABASE_URL='https://vhlmwwybhnjmhwhnvenz.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_MGrK7L4TqEgwgRCwRK2LPA_e57JgVkl';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let events=[],selectedBets=[],session=null,saldo=0;
+
+const esc=v=>String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");
+const abbr=n=>String(n||'').split(' ').map(w=>w[0]).join('').slice(0,3).toUpperCase();
+const formatDate=s=>new Intl.DateTimeFormat('es-CO',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(s));
+const fmtMoney=n=>'$'+Number(n||0).toLocaleString('es-CO',{minimumFractionDigits:2});
+
+// Los eventos ahora vienen de /api/eventos (tabla eventos/mercados/cuotas en
+// Supabase), no directamente de The Odds API — así cada cuota tiene un id
+// real que podemos usar para colocar la apuesta.
+const h2hMercado=e=>(e.mercados||[]).find(m=>m.clave==='h2h');
+const cuotaFor=(mkt,nombre)=>mkt?.cuotas?.find(c=>c.nombre_seleccion===nombre);
+const live=e=>e.estado==='en_vivo';
+
+async function fetchEventos(){
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/eventos`);
+    if(!r.ok)throw new Error(`Backend ${r.status}`);
+    events=await r.json();
+    render();
+  }catch(e){
+    console.error(e);
+    document.getElementById('matchTable').innerHTML='<div class="match-row"><div class="match-teams"><div class="t">No se pudieron cargar los partidos.</div><div class="vs">Verifica el despliegue y la sincronización con Supabase.</div></div></div>';
+    document.getElementById('liveStrip').innerHTML='<div class="mini-card"><div class="mini-teams">Sin datos disponibles</div><div class="mini-league">Corre la sincronización de admin (/api/admin/sync/:sportKey)</div></div>';
+    document.getElementById('liveCount').textContent='Sin datos disponibles';
+  }
+}
+
+function render(){
+  document.getElementById('liveCount').textContent=`${events.filter(live).length} eventos en vivo`;
+  renderTicker();renderLive();renderUpcoming();renderFeatured();
+}
+
+function renderTicker(){
+  let h=events.map(e=>{
+    const m=h2hMercado(e);if(!m)return '';
+    const a=cuotaFor(m,e.equipo_local),d=cuotaFor(m,'Draw'),b=cuotaFor(m,e.equipo_visitante);
+    return `<div class="tick-item">⚽ <b>${abbr(e.equipo_local)}</b> vs <b>${abbr(e.equipo_visitante)}</b> <span class="odd">${a?Number(a.valor).toFixed(2):'-'}</span> · <span class="odd">${d?Number(d.valor).toFixed(2):'-'}</span> · <span class="odd">${b?Number(b.valor).toFixed(2):'-'}</span></div>`;
+  }).join('');
+  document.getElementById('tickerTrack').innerHTML=h+h;
+}
+
+function miniOdd(e,o,l){
+  return o?`<div onclick="selectBet('${esc(o.id)}','${esc(e.id)}','${esc(e.equipo_local)}','${esc(e.equipo_visitante)}','${esc(o.nombre_seleccion)}',${Number(o.valor)})">${l}<br>${Number(o.valor).toFixed(2)}</div>`:'<div>-</div>';
+}
+
+function renderLive(){
+  const list=events.filter(live);
+  document.getElementById('liveStrip').innerHTML=list.length?list.map(e=>{
+    const m=h2hMercado(e);
+    const a=cuotaFor(m,e.equipo_local),d=cuotaFor(m,'Draw'),b=cuotaFor(m,e.equipo_visitante);
+    return `<div class="mini-card"><div class="mini-top"><span class="mini-league">${esc(e.deportes?.nombre||'Fútbol')}</span><span class="live-badge"><span class="dot-live"></span> EN VIVO</span></div><div class="mini-teams">${esc(e.equipo_local)}</div><div class="mini-teams">${esc(e.equipo_visitante)}</div><div class="mini-odds">${miniOdd(e,a,'1')}${miniOdd(e,d,'X')}${miniOdd(e,b,'2')}</div></div>`;
+  }).join(''):'<div class="mini-card"><div class="mini-teams">No hay partidos en vivo ahora.</div><div class="mini-league">Actualizando datos...</div></div>';
+}
+
+function tableOdd(e,o,l){
+  return `<div class="o" ${o?`onclick="selectBet('${esc(o.id)}','${esc(e.id)}','${esc(e.equipo_local)}','${esc(e.equipo_visitante)}','${esc(o.nombre_seleccion)}',${Number(o.valor)})"`:''}><div class="l">${l}</div><div class="v">${o?Number(o.valor).toFixed(2):'-'}</div></div>`;
+}
+
+function renderUpcoming(){
+  const list=events.filter(e=>!live(e));
+  document.getElementById('matchTable').innerHTML=list.length?list.map(e=>{
+    const m=h2hMercado(e);
+    const a=cuotaFor(m,e.equipo_local),d=cuotaFor(m,'Draw'),b=cuotaFor(m,e.equipo_visitante);
+    return `<div class="match-row"><div class="match-time"><b>${formatDate(e.fecha_inicio)}</b>Próximo partido</div><div class="match-teams"><div class="t">${esc(e.equipo_local)}</div><div class="vs">vs</div><div class="t">${esc(e.equipo_visitante)}</div></div><div class="odds-mini">${tableOdd(e,a,'1')}${tableOdd(e,d,'X')}${tableOdd(e,b,'2')}</div></div>`;
+  }).join(''):'<div class="match-row"><div class="match-teams"><div class="t">No hay próximos partidos disponibles.</div></div></div>';
+}
+
+function featuredOdd(e,o,label){
+  return `<div class="odd-btn" ${o?`onclick="selectBet('${esc(o.id)}','${esc(e.id)}','${esc(e.equipo_local)}','${esc(e.equipo_visitante)}','${esc(o.nombre_seleccion)}',${Number(o.valor)})"`:''}><div class="lbl">${label}</div><div class="val">${o?Number(o.valor).toFixed(2):'-'}</div></div>`;
+}
+
+function renderFeatured(){
+  const e=events.find(live)||events[0];if(!e)return;
+  const m=h2hMercado(e);
+  document.getElementById('featLeague').textContent=e.deportes?.nombre||'Fútbol';
+  document.getElementById('featStatus').textContent=live(e)?'EN VIVO':'PRÓXIMO';
+  document.getElementById('featHomeCrest').textContent=abbr(e.equipo_local);
+  document.getElementById('featAwayCrest').textContent=abbr(e.equipo_visitante);
+  document.getElementById('featHome').textContent=e.equipo_local;
+  document.getElementById('featAway').textContent=e.equipo_visitante;
+  document.getElementById('liveScore').textContent='VS';
+  document.getElementById('featOdds').innerHTML=featuredOdd(e,cuotaFor(m,e.equipo_local),'Local')+featuredOdd(e,cuotaFor(m,'Draw'),'Empate')+featuredOdd(e,cuotaFor(m,e.equipo_visitante),'Visitante');
+}
+
+function selectBet(cuotaId,eventId,homeTeam,awayTeam,selection,price){
+  const x=selectedBets.find(b=>b.eventId===eventId);
+  if(x){x.cuotaId=cuotaId;x.selection=selection;x.price=Number(price)}
+  else selectedBets.push({cuotaId,eventId,homeTeam,awayTeam,selection,price:Number(price)});
+  renderSlip();
+}
+
+function removeBet(id){selectedBets=selectedBets.filter(b=>b.eventId!==id);renderSlip()}
+function clearBets(){selectedBets=[];renderSlip()}
+function totalOdds(){return selectedBets.reduce((t,b)=>t*b.price,1)}
+
+function renderSlip(){
+  document.getElementById('betCount').textContent=`${selectedBets.length} selección${selectedBets.length===1?'':'es'}`;
+  document.getElementById('betSelections').innerHTML=selectedBets.length?selectedBets.map(b=>`<div class="bet-item"><div class="bet-item-top"><div><div class="bet-match">${esc(b.homeTeam)} vs ${esc(b.awayTeam)}</div><div class="bet-market">Selección: <strong>${esc(b.selection)}</strong></div></div><div class="bet-price">${b.price.toFixed(2)}</div></div><button class="bet-remove" onclick="removeBet('${esc(b.eventId)}')">Eliminar</button></div>`).join(''):'<div class="bet-empty">Selecciona una cuota para agregarla aquí.</div>';
+  document.getElementById('totalOdds').textContent=totalOdds().toFixed(2);
+  updateWin();
+}
+
+function updateWin(){
+  const stake=Number(document.getElementById('stakeInput').value)||0;
+  const win=stake*totalOdds();
+  document.getElementById('potentialWin').textContent=fmtMoney(win);
+}
+
+document.getElementById('clearBets').onclick=clearBets;
+document.getElementById('stakeInput').oninput=updateWin;
+
+document.getElementById('placeBet').onclick=async()=>{
+  if(!selectedBets.length)return alert('Selecciona al menos una cuota.');
+  if(!session)return openAuth('login');
+  const stake=Number(document.getElementById('stakeInput').value);
+  if(!stake||stake<=0)return alert('Introduce un importe válido.');
+
+  const btn=document.getElementById('placeBet');
+  btn.disabled=true;btn.textContent='Procesando...';
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/apuestas`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({monto:stake,selecciones:selectedBets.map(b=>({cuotaId:b.cuotaId}))})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||'No se pudo colocar la apuesta.');
+    alert(`¡Apuesta colocada! Ganancia potencial: ${fmtMoney(data.ganancia_potencial)}`);
+    clearBets();
+    await refreshSaldo();
+  }catch(e){
+    alert(e.message);
+  }finally{
+    btn.disabled=false;btn.textContent='Realizar apuesta';
+  }
+};
+
+// =========================================================
+// AUTENTICACIÓN (Supabase Auth)
+// =========================================================
+let authMode='login';
+
+function openAuth(mode){
+  authMode=mode;
+  document.getElementById('authEmail').value='';
+  document.getElementById('authPassword').value='';
+  const errEl=document.getElementById('authError');
+  errEl.style.display='none';
+  updateAuthModalText();
+  document.getElementById('authModal').style.display='flex';
+}
+function closeAuth(){document.getElementById('authModal').style.display='none'}
+
+function updateAuthModalText(){
+  const isLogin=authMode==='login';
+  document.getElementById('authTitle').textContent=isLogin?'Iniciar sesión':'Crear cuenta';
+  document.getElementById('authSub').textContent=isLogin?'Entra con tu correo y contraseña.':'Regístrate con tu correo y una contraseña.';
+  document.getElementById('authSubmit').textContent=isLogin?'Entrar':'Registrarme';
+  document.getElementById('authSwitch').innerHTML=isLogin?'¿No tienes cuenta? <a id="authToggle">Regístrate</a>':'¿Ya tienes cuenta? <a id="authToggle">Inicia sesión</a>';
+  document.getElementById('authToggle').onclick=()=>{authMode=isLogin?'signup':'login';updateAuthModalText();};
+}
+
+document.getElementById('loginBtn').onclick=()=>openAuth('login');
+document.getElementById('signupBtn').onclick=()=>openAuth('signup');
+document.getElementById('authCancel').onclick=closeAuth;
+
+document.getElementById('authSubmit').onclick=async()=>{
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPassword').value;
+  const errEl=document.getElementById('authError');
+  errEl.style.display='none';
+
+  if(!email||!password){
+    errEl.style.color='var(--accent-red)';
+    errEl.textContent='Completa correo y contraseña.';
+    errEl.style.display='block';
+    return;
+  }
+
+  const btn=document.getElementById('authSubmit');
+  btn.disabled=true;
+  try{
+    const {data,error}=authMode==='login'
+      ?await sb.auth.signInWithPassword({email,password})
+      :await sb.auth.signUp({email,password});
+    if(error)throw error;
+
+    if(authMode==='signup'&&!data.session){
+      errEl.style.color='var(--accent-green)';
+      errEl.textContent='Cuenta creada. Revisa tu correo para confirmarla antes de iniciar sesión.';
+      errEl.style.display='block';
+      return;
+    }
+    closeAuth();
+    await onAuthChange(data.session);
+  }catch(e){
+    errEl.style.color='var(--accent-red)';
+    errEl.textContent=e.message||'Error de autenticación.';
+    errEl.style.display='block';
+  }finally{
+    btn.disabled=false;
+  }
+};
+
+document.getElementById('logoutBtn').onclick=async()=>{
+  await sb.auth.signOut();
+  await onAuthChange(null);
+};
+
+async function onAuthChange(newSession){
+  session=newSession;
+  const balancePill=document.getElementById('balancePill');
+  const loginBtn=document.getElementById('loginBtn');
+  const signupBtn=document.getElementById('signupBtn');
+  const logoutBtn=document.getElementById('logoutBtn');
+
+  if(session){
+    loginBtn.style.display='none';
+    signupBtn.style.display='none';
+    logoutBtn.style.display='inline-block';
+    balancePill.style.display='flex';
+    await refreshSaldo();
+  }else{
+    loginBtn.style.display='inline-block';
+    signupBtn.style.display='inline-block';
+    logoutBtn.style.display='none';
+    balancePill.style.display='none';
+    saldo=0;
+  }
+}
+
+async function refreshSaldo(){
+  if(!session)return;
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/usuarios/me`,{headers:{Authorization:`Bearer ${session.access_token}`}});
+    if(!r.ok)throw new Error(`Backend ${r.status}`);
+    const me=await r.json();
+    saldo=Number(me.saldo)||0;
+    document.getElementById('balanceAmount').textContent=fmtMoney(saldo);
+  }catch(e){
+    console.error('No se pudo obtener el saldo',e);
+  }
+}
+
+sb.auth.onAuthStateChange((_event,newSession)=>{onAuthChange(newSession)});
+sb.auth.getSession().then(({data})=>onAuthChange(data.session));
+
+fetchEventos();
+setInterval(fetchEventos,20000);
+</script>
+</body>
+</html>
