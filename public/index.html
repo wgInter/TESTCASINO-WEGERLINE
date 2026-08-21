@@ -60,6 +60,27 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .modal-switch{margin-top:14px;text-align:center;font-size:12px;color:var(--text-mid)}
 .modal-switch a{color:var(--accent-green);cursor:pointer}
 .modal-error{font-size:12px;margin-bottom:12px;display:none;line-height:1.4}
+.modal-wide{width:560px;max-width:92vw;max-height:82vh;display:flex;flex-direction:column}
+.modal-wide-body{overflow-y:auto;margin:0 -26px;padding:0 26px}
+.bets-empty{padding:36px 10px;text-align:center;color:var(--text-low);font-size:13px}
+.bet-history-item{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.bhi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.bhi-match{font-size:13px;font-weight:600}
+.bhi-date{font-size:11px;color:var(--text-low);margin-top:3px}
+.status-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap}
+.status-pendiente{background:rgba(139,108,255,.14);color:var(--accent-violet)}
+.status-ganada{background:rgba(44,230,143,.14);color:var(--accent-green)}
+.status-perdida{background:rgba(255,76,106,.14);color:var(--accent-red)}
+.status-anulada{background:rgba(154,166,188,.14);color:var(--text-mid)}
+.bhi-selections{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.bhi-sel{font-size:12px;color:var(--text-mid);display:flex;justify-content:space-between}
+.bhi-sel .sel-name{color:var(--text-hi);font-weight:600}
+.bhi-sel .sel-result{font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
+.bhi-foot{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--text-mid)}
+.bhi-foot strong{font-family:'JetBrains Mono';color:var(--text-hi)}
+.bhi-foot .win{color:var(--accent-green)}
+.tabs-filter{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.tabs-filter .sport-tab{padding:6px 14px;font-size:12px}
 @media(max-width:880px){.hero-grid{grid-template-columns:1fr}.nav-links{display:none}.match-row{grid-template-columns:1fr}.bet-slip{right:10px;left:10px;width:auto;bottom:10px}}
 </style>
 </head>
@@ -70,7 +91,7 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 <nav>
   <div class="logo"><div class="logo-mark">W</div><div class="logo-text">WAGER<span>LINE</span></div></div>
   <div class="nav-links">
-    <a href="#" class="active">En Vivo</a><a href="#">Deportes</a><a href="#">Casino</a><a href="#">Promociones</a><a href="#">Mis Apuestas</a>
+    <a href="#" class="active">En Vivo</a><a href="#">Deportes</a><a href="#">Casino</a><a href="#">Promociones</a><a href="#" id="misApuestasLink">Mis Apuestas</a>
   </div>
   <div class="nav-actions">
     <div class="balance-pill" id="balancePill" style="display:none">💰 <span class="mono" id="balanceAmount">$0.00</span></div>
@@ -139,6 +160,21 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
       <button class="btn btn-primary" id="authSubmit">Entrar</button>
     </div>
     <div class="modal-switch" id="authSwitch">¿No tienes cuenta? <a id="authToggle">Regístrate</a></div>
+  </div>
+</div>
+
+<div id="myBetsModal" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3>Mis Apuestas</h3>
+    <p class="sub">Historial de tus apuestas, con su estado y resultado.</p>
+    <div class="tabs-filter" id="betsFilter">
+      <div class="sport-tab active" data-filter="todas">Todas</div>
+      <div class="sport-tab" data-filter="pendiente">Pendientes</div>
+      <div class="sport-tab" data-filter="ganada">Ganadas</div>
+      <div class="sport-tab" data-filter="perdida">Perdidas</div>
+    </div>
+    <div class="modal-wide-body" id="myBetsList"><div class="bets-empty">Cargando...</div></div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="myBetsClose" style="flex:1">Cerrar</button></div>
   </div>
 </div>
 
@@ -399,6 +435,71 @@ async function refreshSaldo(){
     console.error('No se pudo obtener el saldo',e);
   }
 }
+
+// =========================================================
+// MIS APUESTAS (historial)
+// =========================================================
+let myBets=[],betsFilterActive='todas';
+
+const statusLabel={pendiente:'Pendiente',ganada:'Ganada',perdida:'Perdida',anulada:'Anulada'};
+const resultLabel={pendiente:'—',ganada:'✔ Ganó',perdida:'✘ Perdió',anulada:'Anulada'};
+
+async function openMyBets(){
+  document.getElementById('myBetsModal').style.display='flex';
+  if(!session){
+    document.getElementById('myBetsList').innerHTML='<div class="bets-empty">Inicia sesión para ver tus apuestas.</div>';
+    return;
+  }
+  document.getElementById('myBetsList').innerHTML='<div class="bets-empty">Cargando...</div>';
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/apuestas`,{headers:{Authorization:`Bearer ${session.access_token}`}});
+    if(!r.ok)throw new Error(`Backend ${r.status}`);
+    myBets=await r.json();
+    renderMyBets();
+  }catch(e){
+    console.error(e);
+    document.getElementById('myBetsList').innerHTML='<div class="bets-empty">No se pudo cargar tu historial de apuestas.</div>';
+  }
+}
+function closeMyBets(){document.getElementById('myBetsModal').style.display='none'}
+
+function renderMyBets(){
+  const list=betsFilterActive==='todas'?myBets:myBets.filter(b=>b.estado===betsFilterActive);
+  const el=document.getElementById('myBetsList');
+  if(!list.length){el.innerHTML='<div class="bets-empty">No tienes apuestas en esta categoría.</div>';return;}
+
+  el.innerHTML=list.map(b=>{
+    const sels=(b.apuesta_selecciones||[]).map(s=>{
+      const ev=s.cuotas?.mercados?.eventos;
+      const match=ev?`${esc(ev.equipo_local)} vs ${esc(ev.equipo_visitante)}`:'Evento';
+      const resClass=s.resultado==='ganada'?'status-ganada':s.resultado==='perdida'?'status-perdida':s.resultado==='anulada'?'status-anulada':'status-pendiente';
+      return `<div class="bhi-sel"><span>${match} — <span class="sel-name">${esc(s.cuotas?.nombre_seleccion||'')}</span> @ ${Number(s.valor_cuota_congelado).toFixed(2)}</span><span class="status-badge sel-result ${resClass}">${resultLabel[s.resultado]||s.resultado}</span></div>`;
+    }).join('');
+    const statusClass=`status-${b.estado}`;
+    const fecha=new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(b.creado_en));
+    return `<div class="bet-history-item">
+      <div class="bhi-top">
+        <div><div class="bhi-match">${b.tipo==='combinada'?'Combinada · '+ (b.apuesta_selecciones||[]).length +' selecciones':'Simple'}</div><div class="bhi-date">${fecha}</div></div>
+        <span class="status-badge ${statusClass}">${statusLabel[b.estado]||b.estado}</span>
+      </div>
+      <div class="bhi-selections">${sels}</div>
+      <div class="bhi-foot">
+        <span>Importe <strong>${fmtMoney(b.monto)}</strong> · Cuota <strong>${Number(b.cuota_total).toFixed(2)}</strong></span>
+        <span>Ganancia ${b.estado==='ganada'?'pagada':'potencial'} <strong class="${b.estado==='ganada'?'win':''}">${fmtMoney(b.ganancia_potencial)}</strong></span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('misApuestasLink').onclick=(e)=>{e.preventDefault();openMyBets();};
+document.getElementById('myBetsClose').onclick=closeMyBets;
+document.getElementById('betsFilter').onclick=(e)=>{
+  const tab=e.target.closest('.sport-tab');if(!tab)return;
+  document.querySelectorAll('#betsFilter .sport-tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  betsFilterActive=tab.dataset.filter;
+  renderMyBets();
+};
 
 sb.auth.onAuthStateChange((_event,newSession)=>{onAuthChange(newSession)});
 sb.auth.getSession().then(({data})=>onAuthChange(data.session));
