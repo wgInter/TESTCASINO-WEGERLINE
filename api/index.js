@@ -52,7 +52,7 @@ async function oddsRequest(path, query = {}) {
 
 app.get('/api/sports', async (_req, res) => {
   try {
-    res.json(await oddsRequest('/sports'));
+    res.json(await oddsRequest('/sports', { apiKey: API_KEY }));
   } catch (error) {
     console.error(error);
     res.status(502).json({ error: error.message });
