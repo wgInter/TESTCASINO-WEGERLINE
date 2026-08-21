@@ -23,7 +23,7 @@ if (!API_KEY) {
 }
 
 if (!CRON_SECRET) {
-  console.warn('⚠️ Falta CRON_SECRET en el archivo .env — /api/cron/sync/:sportKey rechazará todo');
+  console.warn('⚠️ Falta CRON_SECRET en el archivo .env — rutas /api/cron/* rechazarán todo');
 }
 
 const cache = new Map();
@@ -166,8 +166,6 @@ app.get('/api/eventos', async (req, res) => {
 
 // syncSport(sportKey, options) — trae deportes+eventos+cuotas reales desde
 // The Odds API y los guarda/actualiza en deportes, eventos, mercados y cuotas.
-// Extraída como función independiente para poder llamarla tanto desde la
-// ruta de admin (JWT) como desde la ruta de cron (CRON_SECRET).
 async function syncSport(sportKey, { region = 'eu', markets = 'h2h', oddsFormat = 'decimal' } = {}) {
   const oddsEvents = await oddsRequest(`/sports/${sportKey}/odds`, {
     apiKey: API_KEY,
@@ -176,7 +174,6 @@ async function syncSport(sportKey, { region = 'eu', markets = 'h2h', oddsFormat 
     oddsFormat,
   });
 
-  // upsert del deporte (clave = sportKey de The Odds API)
   const { data: deporte, error: deporteError } = await supabaseAdmin
     .from('deportes')
     .upsert({ clave: sportKey, nombre: sportKey }, { onConflict: 'clave' })
@@ -203,7 +200,6 @@ async function syncSport(sportKey, { region = 'eu', markets = 'h2h', oddsFormat 
 
     for (const bookmaker of ev.bookmakers || []) {
       for (const mkt of bookmaker.markets || []) {
-        // un "mercado" por evento+clave (ej: h2h). Si ya existe, lo reusamos.
         let { data: mercado, error: mercadoSelError } = await supabaseAdmin
           .from('mercados')
           .select('id')
@@ -224,7 +220,6 @@ async function syncSport(sportKey, { region = 'eu', markets = 'h2h', oddsFormat 
         }
 
         for (const outcome of mkt.outcomes || []) {
-          // una cuota por mercado + casa de apuestas + selección
           const { data: existente } = await supabaseAdmin
             .from('cuotas')
             .select('id')
@@ -256,9 +251,89 @@ async function syncSport(sportKey, { region = 'eu', markets = 'h2h', oddsFormat 
   return { eventosCreados, mercadosCreados, cuotasCreadas };
 }
 
-// POST /api/admin/sync/:sportKey — versión para uso manual/admin desde el
-// navegador o PowerShell. Requiere JWT de un usuario con rol admin.
-// (solo admin — esto consume tu cuota de The Odds API)
+// syncScores(sportKey, daysFrom) — trae resultados reales (marcador final) de
+// partidos ya jugados desde The Odds API /scores y actualiza la tabla eventos.
+// daysFrom: cuántos días hacia atrás buscar resultados (máximo 3 según la API).
+async function syncScores(sportKey, daysFrom = 3) {
+  const scores = await oddsRequest(`/sports/${sportKey}/scores`, {
+    apiKey: API_KEY,
+    daysFrom,
+  });
+
+  let eventosActualizados = 0;
+
+  for (const ev of scores) {
+    // la API solo manda "completed: true" cuando el partido ya terminó
+    // y trae el array "scores" con el marcador de cada equipo
+    if (!ev.completed || !Array.isArray(ev.scores)) continue;
+
+    const localScore = ev.scores.find((s) => s.name === ev.home_team);
+    const awayScore = ev.scores.find((s) => s.name === ev.away_team);
+    if (!localScore || !awayScore) continue;
+
+    const { data: eventoExistente } = await supabaseAdmin
+      .from('eventos')
+      .select('id, estado')
+      .eq('id', ev.id)
+      .maybeSingle();
+
+    // si el evento no está en nuestra base, o ya estaba finalizado, no hay nada que hacer
+    if (!eventoExistente || eventoExistente.estado === 'finalizado') continue;
+
+    const { error } = await supabaseAdmin
+      .from('eventos')
+      .update({
+        marcador_local: parseInt(localScore.score, 10),
+        marcador_visitante: parseInt(awayScore.score, 10),
+        estado: 'finalizado',
+        actualizado_en: new Date().toISOString(),
+      })
+      .eq('id', ev.id);
+
+    if (error) throw error;
+    eventosActualizados++;
+  }
+
+  return { eventosActualizados };
+}
+
+// settlePendingBets() — recorre todas las apuestas 'pendiente' e intenta
+// liquidarlas. liquidar_apuesta() en Supabase ya es segura de llamar aunque
+// el partido de esa apuesta no haya terminado: simplemente no hace nada y
+// devuelve la apuesta sin cambios en ese caso, así que no hay riesgo de
+// liquidar antes de tiempo.
+async function settlePendingBets() {
+  const { data: pendientes, error } = await supabaseAdmin
+    .from('apuestas')
+    .select('id')
+    .eq('estado', 'pendiente');
+
+  if (error) throw error;
+
+  let liquidadas = 0, siguenPendientes = 0, errores = 0;
+
+  for (const apuesta of pendientes || []) {
+    try {
+      const { data, error: liquidarError } = await supabaseAdmin.rpc('liquidar_apuesta', {
+        p_apuesta_id: apuesta.id,
+      });
+      if (liquidarError) throw liquidarError;
+
+      if (data && data.estado !== 'pendiente') {
+        liquidadas++;
+      } else {
+        siguenPendientes++;
+      }
+    } catch (err) {
+      console.error(`Error liquidando apuesta ${apuesta.id}:`, err.message);
+      errores++;
+    }
+  }
+
+  return { totalPendientesRevisadas: (pendientes || []).length, liquidadas, siguenPendientes, errores };
+}
+
+// POST /api/admin/sync/:sportKey — versión manual/admin para traer cuotas.
 app.post('/api/admin/sync/:sportKey', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { sportKey } = req.params;
@@ -271,10 +346,23 @@ app.post('/api/admin/sync/:sportKey', requireAuth, requireAdmin, async (req, res
   }
 });
 
-// POST /api/cron/sync/:sportKey — versión para Vercel Cron Jobs.
-// No usa JWT de usuario: Vercel llama a los crons con
-// "Authorization: Bearer $CRON_SECRET" automáticamente cuando la env var
-// CRON_SECRET está configurada en el proyecto, así que validamos contra eso.
+// POST /api/admin/settle/:sportKey — versión manual/admin: trae resultados
+// reales y liquida todas las apuestas pendientes que ya puedan resolverse.
+app.post('/api/admin/settle/:sportKey', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { sportKey } = req.params;
+    const { daysFrom } = req.query;
+    const scoresResult = await syncScores(sportKey, daysFrom ? Number(daysFrom) : undefined);
+    const settleResult = await settlePendingBets();
+    res.json({ ...scoresResult, ...settleResult });
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message });
+  }
+});
+
+// POST /api/cron/sync/:sportKey — versión para Vercel Cron Jobs (trae cuotas
+// nuevas). Autenticado con CRON_SECRET, no con JWT de usuario.
 app.post('/api/cron/sync/:sportKey', async (req, res) => {
   const authHeader = req.headers.authorization || '';
   if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
@@ -285,6 +373,27 @@ app.post('/api/cron/sync/:sportKey', async (req, res) => {
     const { sportKey } = req.params;
     const resultado = await syncSport(sportKey);
     res.json(resultado);
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message });
+  }
+});
+
+// POST /api/cron/settle/:sportKey — versión para Vercel Cron Jobs: trae
+// resultados reales de partidos jugados y liquida automáticamente todas las
+// apuestas pendientes que ya puedan resolverse (paga o descuenta según toque).
+// Autenticado con CRON_SECRET, no con JWT de usuario.
+app.post('/api/cron/settle/:sportKey', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+
+  try {
+    const { sportKey } = req.params;
+    const scoresResult = await syncScores(sportKey);
+    const settleResult = await settlePendingBets();
+    res.json({ ...scoresResult, ...settleResult });
   } catch (error) {
     console.error(error);
     res.status(502).json({ error: error.message });
@@ -335,8 +444,7 @@ app.get('/api/apuestas', requireAuth, async (req, res) => {
   res.json(data);
 });
 
-// POST /api/admin/apuestas/:id/liquidar — intenta liquidar (solo admin)
-// Requiere que el/los evento(s) de la apuesta ya estén 'finalizado' con marcador cargado.
+// POST /api/admin/apuestas/:id/liquidar — intenta liquidar una apuesta puntual (solo admin)
 app.post('/api/admin/apuestas/:id/liquidar', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
 
@@ -360,8 +468,10 @@ app.get('/api/admin/apuestas/pendientes', requireAuth, requireAdmin, async (_req
   res.json(data);
 });
 
-// POST /api/admin/eventos/:id/resultado — carga el marcador final de un evento (solo admin)
-// body: { marcadorLocal, marcadorVisitante }
+// POST /api/admin/eventos/:id/resultado — carga manual del marcador final de
+// un evento (solo admin). Sigue disponible por si algún mercado/deporte no
+// está cubierto por syncScores (mercados distintos a h2h, deportes sin
+// soporte de /scores en The Odds API, etc.)
 app.post('/api/admin/eventos/:id/resultado', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { marcadorLocal, marcadorVisitante } = req.body;

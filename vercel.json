@@ -4,6 +4,7 @@
     { "source": "/(.*)", "destination": "/api/index" }
   ],
   "crons": [
-    { "path": "/api/cron/sync/soccer_epl", "schedule": "0 6 * * *" }
+    { "path": "/api/cron/sync/soccer_epl", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/settle/soccer_epl", "schedule": "0 8 * * *" }
   ]
 }
