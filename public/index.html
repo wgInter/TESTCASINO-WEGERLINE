@@ -82,6 +82,20 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .tabs-filter{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .tabs-filter .sport-tab{padding:6px 14px;font-size:12px}
 .sport-tab[data-disabled]{opacity:.4;cursor:not-allowed}
+.slot-machine{background:linear-gradient(160deg,var(--bg-2),var(--surface));border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center}
+.slot-reels{display:flex;justify-content:center;gap:12px;margin:18px 0}
+.slot-reel{width:76px;height:88px;background:var(--bg-1);border:2px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden}
+.slot-reel.spinning{animation:slotSpin .12s linear infinite}
+@keyframes slotSpin{0%{transform:translateY(0)}50%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+.slot-bet-row{display:flex;gap:10px;align-items:center;justify-content:center;margin:14px 0}
+.slot-bet-row input{width:120px;text-align:center;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg-1);color:var(--text-hi);font-family:'JetBrains Mono'}
+.slot-result{min-height:26px;font-size:14px;font-weight:700;margin-top:6px}
+.slot-result.win{color:var(--accent-green)}
+.slot-result.lose{color:var(--text-mid)}
+.slot-paytable{margin-top:18px;font-size:11px;color:var(--text-low);display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.slot-paytable span{background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:4px 8px}
+.casino-tabs{display:flex;gap:8px;margin-bottom:18px;justify-content:center}
+.casino-tabs .sport-tab.disabled{opacity:.4;cursor:not-allowed}
 @media(max-width:880px){.hero-grid{grid-template-columns:1fr}.nav-links{display:none}.match-row{grid-template-columns:1fr}.bet-slip{right:10px;left:10px;width:auto;bottom:10px}}
 </style>
 </head>
@@ -92,7 +106,7 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 <nav>
   <div class="logo"><div class="logo-mark">W</div><div class="logo-text">WAGER<span>LINE</span></div></div>
   <div class="nav-links">
-    <a href="#" class="active">En Vivo</a><a href="#">Deportes</a><a href="#">Casino</a><a href="#">Promociones</a><a href="#" id="misApuestasLink">Mis Apuestas</a>
+    <a href="#" class="active">En Vivo</a><a href="#">Deportes</a><a href="#" id="casinoLink">Casino</a><a href="#">Promociones</a><a href="#" id="misApuestasLink">Mis Apuestas</a>
   </div>
   <div class="nav-actions">
     <div class="balance-pill" id="balancePill" style="display:none">💰 <span class="mono" id="balanceAmount">$0.00</span></div>
@@ -176,6 +190,34 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
     </div>
     <div class="modal-wide-body" id="myBetsList"><div class="bets-empty">Cargando...</div></div>
     <div class="modal-actions"><button class="btn btn-ghost" id="myBetsClose" style="flex:1">Cerrar</button></div>
+  </div>
+</div>
+
+<div id="casinoModal" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3>🎰 Casino</h3>
+    <p class="sub">Tragamonedas — juega con tu saldo real.</p>
+    <div class="casino-tabs">
+      <div class="sport-tab active">Clásica</div>
+      <div class="sport-tab disabled" title="Próximamente">Ruleta</div>
+      <div class="sport-tab disabled" title="Próximamente">Blackjack</div>
+    </div>
+    <div class="slot-machine">
+      <div class="slot-reels">
+        <div class="slot-reel" id="reel1">🍒</div>
+        <div class="slot-reel" id="reel2">🔔</div>
+        <div class="slot-reel" id="reel3">⭐</div>
+      </div>
+      <div class="slot-bet-row">
+        <input type="number" id="slotBetAmount" value="1000" min="1" step="100">
+        <button class="btn btn-primary" id="slotSpinBtn" style="width:auto;padding:12px 24px">GIRAR</button>
+      </div>
+      <div class="slot-result" id="slotResult"></div>
+      <div class="slot-paytable">
+        <span>🍒🍒🍒 = x3</span><span>🔔🔔🔔 = x5</span><span>⭐⭐⭐ = x8</span><span>💎💎💎 = x15</span><span>7️⃣7️⃣7️⃣ = x40</span><span>Par = devuelve apuesta</span>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-ghost" id="casinoClose" style="flex:1">Cerrar</button></div>
   </div>
 </div>
 
@@ -516,6 +558,86 @@ document.getElementById('betsFilter').onclick=(e)=>{
   betsFilterActive=tab.dataset.filter;
   renderMyBets();
 };
+
+// =========================================================
+// CASINO — TRAGAMONEDAS
+// =========================================================
+let slotSpinning=false;
+const slotSymbols=['🍒','🔔','⭐','💎','7️⃣'];
+
+function openCasino(){
+  document.getElementById('casinoModal').style.display='flex';
+}
+function closeCasino(){
+  document.getElementById('casinoModal').style.display='none';
+}
+
+async function spinSlot(){
+  if(slotSpinning)return;
+  if(!session){
+    document.getElementById('slotResult').textContent='Inicia sesión para jugar.';
+    document.getElementById('slotResult').className='slot-result';
+    return;
+  }
+  const monto=Number(document.getElementById('slotBetAmount').value);
+  if(!monto||monto<=0){
+    document.getElementById('slotResult').textContent='Ingresa un monto válido.';
+    document.getElementById('slotResult').className='slot-result';
+    return;
+  }
+
+  slotSpinning=true;
+  document.getElementById('slotSpinBtn').disabled=true;
+  document.getElementById('slotResult').textContent='';
+  document.getElementById('slotResult').className='slot-result';
+  const reels=[document.getElementById('reel1'),document.getElementById('reel2'),document.getElementById('reel3')];
+  reels.forEach(r=>r.classList.add('spinning'));
+
+  // animación local: cicla símbolos al azar mientras esperamos al backend
+  const spinTimer=setInterval(()=>{
+    reels.forEach(r=>r.textContent=slotSymbols[Math.floor(Math.random()*slotSymbols.length)]);
+  },90);
+
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/casino/slot/spin`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({monto})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||`Backend ${r.status}`);
+
+    // deja correr la animación un poco más para que se sienta natural,
+    // luego fija los símbolos reales que devolvió el servidor
+    await new Promise(res=>setTimeout(res,700));
+    clearInterval(spinTimer);
+    reels.forEach((el,i)=>{el.textContent=data.simbolos[i];el.classList.remove('spinning');});
+
+    saldo=Number(data.saldo_nuevo)||0;
+    document.getElementById('balanceAmount').textContent=fmtMoney(saldo);
+
+    const resEl=document.getElementById('slotResult');
+    if(data.ganancia>0){
+      resEl.textContent=data.resultado==='triple'?`¡TRIPLE! Ganaste ${fmtMoney(data.ganancia)}`:`Par — recuperas ${fmtMoney(data.ganancia)}`;
+      resEl.className='slot-result win';
+    }else{
+      resEl.textContent='Sin premio esta vez.';
+      resEl.className='slot-result lose';
+    }
+  }catch(e){
+    clearInterval(spinTimer);
+    reels.forEach(r=>r.classList.remove('spinning'));
+    document.getElementById('slotResult').textContent=e.message||'No se pudo procesar el giro.';
+    document.getElementById('slotResult').className='slot-result';
+  }finally{
+    slotSpinning=false;
+    document.getElementById('slotSpinBtn').disabled=false;
+  }
+}
+
+document.getElementById('casinoLink').onclick=(e)=>{e.preventDefault();openCasino();};
+document.getElementById('casinoClose').onclick=closeCasino;
+document.getElementById('slotSpinBtn').onclick=spinSlot;
 
 sb.auth.onAuthStateChange((_event,newSession)=>{onAuthChange(newSession)});
 sb.auth.getSession().then(({data})=>onAuthChange(data.session));

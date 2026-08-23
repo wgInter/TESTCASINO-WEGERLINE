@@ -588,6 +588,29 @@ app.post('/api/apuestas', requireAuth, async (req, res) => {
   res.status(201).json(data);
 });
 
+// =========================================================
+// CASINO
+// =========================================================
+
+// POST /api/casino/slot/spin — gira el tragamonedas con dinero real del saldo.
+// La lógica del juego (símbolos, pago) corre en la función SQL
+// jugar_tragamonedas(), nunca en el cliente, para que no se pueda manipular.
+// body: { monto }
+app.post('/api/casino/slot/spin', requireAuth, async (req, res) => {
+  const { monto } = req.body;
+  if (!monto || monto <= 0) {
+    return res.status(400).json({ error: 'monto es requerido y debe ser mayor a 0' });
+  }
+
+  const { data, error } = await supabaseAdmin.rpc('jugar_tragamonedas', {
+    p_usuario_id: req.user.id,
+    p_monto: monto,
+  });
+
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 // GET /api/apuestas — historial de apuestas del usuario, con sus selecciones
 app.get('/api/apuestas', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin
