@@ -26,6 +26,17 @@ if (!CRON_SECRET) {
   console.warn('⚠️ Falta CRON_SECRET en el archivo .env — rutas /api/cron/* rechazarán todo');
 }
 
+// Deportes/ligas activas del sitio. Los keys son los reales confirmados por
+// GET /api/sports para esta cuenta de The Odds API (F1/Motorsport no está
+// disponible en el plan actual, por eso no aparece aquí).
+const ACTIVE_SPORTS = [
+  'soccer_epl',
+  'basketball_nba',
+  'tennis_atp_cincinnati_open',
+  'americanfootball_nfl',
+  'mma_mixed_martial_arts',
+];
+
 const cache = new Map();
 const CACHE_TTL = 20_000;
 
@@ -332,6 +343,79 @@ async function settlePendingBets() {
 
   return { totalPendientesRevisadas: (pendientes || []).length, liquidadas, siguenPendientes, errores };
 }
+
+// POST /api/admin/sync-all — versión manual/admin: sincroniza cuotas de
+// TODOS los deportes activos (ACTIVE_SPORTS) en una sola llamada.
+app.post('/api/admin/sync-all', requireAuth, requireAdmin, async (req, res) => {
+  const resultados = {};
+  for (const sportKey of ACTIVE_SPORTS) {
+    try {
+      resultados[sportKey] = await syncSport(sportKey);
+    } catch (error) {
+      console.error(`Error sincronizando ${sportKey}:`, error.message);
+      resultados[sportKey] = { error: error.message };
+    }
+  }
+  res.json(resultados);
+});
+
+// POST /api/admin/settle-all — versión manual/admin: trae resultados y
+// liquida apuestas pendientes para TODOS los deportes activos.
+app.post('/api/admin/settle-all', requireAuth, requireAdmin, async (req, res) => {
+  const scoresPorDeporte = {};
+  for (const sportKey of ACTIVE_SPORTS) {
+    try {
+      scoresPorDeporte[sportKey] = await syncScores(sportKey);
+    } catch (error) {
+      console.error(`Error trayendo scores de ${sportKey}:`, error.message);
+      scoresPorDeporte[sportKey] = { error: error.message };
+    }
+  }
+  const settleResult = await settlePendingBets();
+  res.json({ scoresPorDeporte, ...settleResult });
+});
+
+// POST /api/cron/sync-all — versión para cron (Vercel o externo): sincroniza
+// cuotas de todos los deportes activos. Autenticado con CRON_SECRET.
+app.post('/api/cron/sync-all', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  const resultados = {};
+  for (const sportKey of ACTIVE_SPORTS) {
+    try {
+      resultados[sportKey] = await syncSport(sportKey);
+    } catch (error) {
+      console.error(`Error sincronizando ${sportKey}:`, error.message);
+      resultados[sportKey] = { error: error.message };
+    }
+  }
+  res.json(resultados);
+});
+
+// POST /api/cron/settle-all — versión para cron (Vercel o externo): trae
+// resultados y liquida apuestas pendientes para todos los deportes activos
+// en una sola llamada. Pensada para el cron externo (cron-job.org) que
+// corre cada 15 min, así solo se necesita UN job externo en vez de uno por
+// deporte. Autenticado con CRON_SECRET.
+app.post('/api/cron/settle-all', async (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  const scoresPorDeporte = {};
+  for (const sportKey of ACTIVE_SPORTS) {
+    try {
+      scoresPorDeporte[sportKey] = await syncScores(sportKey);
+    } catch (error) {
+      console.error(`Error trayendo scores de ${sportKey}:`, error.message);
+      scoresPorDeporte[sportKey] = { error: error.message };
+    }
+  }
+  const settleResult = await settlePendingBets();
+  res.json({ scoresPorDeporte, ...settleResult });
+});
 
 // POST /api/admin/sync/:sportKey — versión manual/admin para traer cuotas.
 app.post('/api/admin/sync/:sportKey', requireAuth, requireAdmin, async (req, res) => {
