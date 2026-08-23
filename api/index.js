@@ -154,12 +154,17 @@ app.post('/api/admin/saldo/ajustar', requireAuth, requireAdmin, async (req, res)
 app.get('/api/eventos', async (req, res) => {
   const { sportKey } = req.query;
 
+  // Nota: usamos "deportes!inner(...)" en vez de "deportes(...)" — con un
+  // join normal (izquierdo), .eq('deportes.clave', sportKey) filtra el
+  // objeto anidado pero NO restringe qué eventos se devuelven, así que el
+  // filtro por deporte no funcionaba. Con !inner, el filtro sí aplica sobre
+  // las filas de eventos.
   let query = supabaseAdmin
     .from('eventos')
     .select(`
       id, equipo_local, equipo_visitante, fecha_inicio, estado,
       marcador_local, marcador_visitante,
-      deportes ( clave, nombre ),
+      deportes!inner ( clave, nombre ),
       mercados (
         id, clave, descripcion,
         cuotas ( id, casa_apuestas, nombre_seleccion, valor, actualizado_en )
