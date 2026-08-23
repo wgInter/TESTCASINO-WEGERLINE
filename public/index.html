@@ -81,6 +81,7 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .bhi-foot .win{color:var(--accent-green)}
 .tabs-filter{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .tabs-filter .sport-tab{padding:6px 14px;font-size:12px}
+.sport-tab[data-disabled]{opacity:.4;cursor:not-allowed}
 @media(max-width:880px){.hero-grid{grid-template-columns:1fr}.nav-links{display:none}.match-row{grid-template-columns:1fr}.bet-slip{right:10px;left:10px;width:auto;bottom:10px}}
 </style>
 </head>
@@ -122,7 +123,7 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 </div>
 
 <section>
-  <div class="sport-tabs"><div class="sport-tab active">⚽ Fútbol</div><div class="sport-tab">🏀 Basketball</div><div class="sport-tab">🎾 Tenis</div><div class="sport-tab">🏈 NFL</div><div class="sport-tab">🥊 MMA</div><div class="sport-tab">🏎️ F1</div></div>
+  <div class="sport-tabs" id="sportTabs"><div class="sport-tab active" data-sport="soccer_epl">⚽ Fútbol</div><div class="sport-tab" data-sport="basketball_nba">🏀 Basketball</div><div class="sport-tab" data-sport="tennis_atp_cincinnati_open">🎾 Tenis</div><div class="sport-tab" data-sport="americanfootball_nfl">🏈 NFL</div><div class="sport-tab" data-sport="mma_mixed_martial_arts">🥊 MMA</div><div class="sport-tab" data-disabled="true" title="Próximamente, no disponible en el plan actual">🏎️ F1</div></div>
   <div class="sec-head"><h2>En vivo ahora</h2><a href="#">Actualizar automáticamente</a></div>
   <div class="live-strip" id="liveStrip"></div>
 </section>
@@ -204,10 +205,13 @@ const fmtMoney=n=>'$'+Number(n||0).toLocaleString('es-CO',{minimumFractionDigits
 const h2hMercado=e=>(e.mercados||[]).find(m=>m.clave==='h2h');
 const cuotaFor=(mkt,nombre)=>mkt?.cuotas?.find(c=>c.nombre_seleccion===nombre);
 const live=e=>e.estado==='en_vivo';
+let currentSport='soccer_epl';
 
-async function fetchEventos(){
+async function fetchEventos(sportKey=currentSport){
+  currentSport=sportKey;
   try{
-    const r=await fetch(`${BACKEND_URL}/api/eventos`);
+    const url=sportKey?`${BACKEND_URL}/api/eventos?sportKey=${encodeURIComponent(sportKey)}`:`${BACKEND_URL}/api/eventos`;
+    const r=await fetch(url);
     if(!r.ok)throw new Error(`Backend ${r.status}`);
     events=await r.json();
     render();
@@ -219,16 +223,28 @@ async function fetchEventos(){
   }
 }
 
+document.getElementById('sportTabs').onclick=(e)=>{
+  const tab=e.target.closest('.sport-tab');
+  if(!tab||tab.dataset.disabled)return;
+  document.querySelectorAll('#sportTabs .sport-tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  fetchEventos(tab.dataset.sport);
+};
+
 function render(){
   document.getElementById('liveCount').textContent=`${events.filter(live).length} eventos en vivo`;
   renderTicker();renderLive();renderUpcoming();renderFeatured();
+}
+
+function sportEmoji(clave){
+  return {soccer_epl:'⚽',basketball_nba:'🏀',tennis_atp_cincinnati_open:'🎾',americanfootball_nfl:'🏈',mma_mixed_martial_arts:'🥊'}[clave]||'🏆';
 }
 
 function renderTicker(){
   let h=events.map(e=>{
     const m=h2hMercado(e);if(!m)return '';
     const a=cuotaFor(m,e.equipo_local),d=cuotaFor(m,'Draw'),b=cuotaFor(m,e.equipo_visitante);
-    return `<div class="tick-item">⚽ <b>${abbr(e.equipo_local)}</b> vs <b>${abbr(e.equipo_visitante)}</b> <span class="odd">${a?Number(a.valor).toFixed(2):'-'}</span> · <span class="odd">${d?Number(d.valor).toFixed(2):'-'}</span> · <span class="odd">${b?Number(b.valor).toFixed(2):'-'}</span></div>`;
+    return `<div class="tick-item">${sportEmoji(e.deportes?.clave)} <b>${abbr(e.equipo_local)}</b> vs <b>${abbr(e.equipo_visitante)}</b> <span class="odd">${a?Number(a.valor).toFixed(2):'-'}</span> · <span class="odd">${d?Number(d.valor).toFixed(2):'-'}</span> · <span class="odd">${b?Number(b.valor).toFixed(2):'-'}</span></div>`;
   }).join('');
   document.getElementById('tickerTrack').innerHTML=h+h;
 }
