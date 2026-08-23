@@ -194,69 +194,119 @@ async function syncSport(sportKey, { region = 'eu', markets = 'h2h', oddsFormat 
 
   let eventosCreados = 0, mercadosCreados = 0, cuotasCreadas = 0;
 
-  for (const ev of oddsEvents) {
-    const { error: eventoError } = await supabaseAdmin
+  // 1) upsert de todos los eventos de este deporte en un solo round-trip
+  if (oddsEvents.length > 0) {
+    const filasEventos = oddsEvents.map((ev) => ({
+      id: ev.id,
+      deporte_id: deporte.id,
+      equipo_local: ev.home_team,
+      equipo_visitante: ev.away_team,
+      fecha_inicio: ev.commence_time,
+      estado: 'programado',
+      actualizado_en: new Date().toISOString(),
+    }));
+    const { error: eventosError } = await supabaseAdmin
       .from('eventos')
-      .upsert({
-        id: ev.id,
-        deporte_id: deporte.id,
-        equipo_local: ev.home_team,
-        equipo_visitante: ev.away_team,
-        fecha_inicio: ev.commence_time,
-        estado: 'programado',
-        actualizado_en: new Date().toISOString(),
-      }, { onConflict: 'id' });
-    if (eventoError) throw eventoError;
-    eventosCreados++;
+      .upsert(filasEventos, { onConflict: 'id' });
+    if (eventosError) throw eventosError;
+    eventosCreados = oddsEvents.length;
+  }
 
+  // 2) trae de una vez TODOS los mercados ya existentes para estos eventos
+  const eventIds = oddsEvents.map((ev) => ev.id);
+  let mercadosExistentes = [];
+  if (eventIds.length > 0) {
+    const { data, error } = await supabaseAdmin
+      .from('mercados')
+      .select('id, evento_id, clave')
+      .in('evento_id', eventIds);
+    if (error) throw error;
+    mercadosExistentes = data || [];
+  }
+  // mapa "eventoId|claveMercado" -> mercado
+  const mercadoMap = new Map(mercadosExistentes.map((m) => [`${m.evento_id}|${m.clave}`, m]));
+
+  // 3) detecta qué mercados faltan por crear y los inserta en un solo lote
+  const mercadosPorCrear = [];
+  const clavesVistas = new Set();
+  for (const ev of oddsEvents) {
     for (const bookmaker of ev.bookmakers || []) {
       for (const mkt of bookmaker.markets || []) {
-        let { data: mercado, error: mercadoSelError } = await supabaseAdmin
-          .from('mercados')
-          .select('id')
-          .eq('evento_id', ev.id)
-          .eq('clave', mkt.key)
-          .maybeSingle();
-        if (mercadoSelError) throw mercadoSelError;
-
-        if (!mercado) {
-          const { data: nuevoMercado, error: mercadoInsError } = await supabaseAdmin
-            .from('mercados')
-            .insert({ evento_id: ev.id, clave: mkt.key, descripcion: mkt.key })
-            .select('id')
-            .single();
-          if (mercadoInsError) throw mercadoInsError;
-          mercado = nuevoMercado;
-          mercadosCreados++;
+        const key = `${ev.id}|${mkt.key}`;
+        if (!mercadoMap.has(key) && !clavesVistas.has(key)) {
+          clavesVistas.add(key);
+          mercadosPorCrear.push({ evento_id: ev.id, clave: mkt.key, descripcion: mkt.key });
         }
+      }
+    }
+  }
+  if (mercadosPorCrear.length > 0) {
+    const { data: nuevos, error: mercadoInsError } = await supabaseAdmin
+      .from('mercados')
+      .insert(mercadosPorCrear)
+      .select('id, evento_id, clave');
+    if (mercadoInsError) throw mercadoInsError;
+    for (const m of nuevos) mercadoMap.set(`${m.evento_id}|${m.clave}`, m);
+    mercadosCreados = nuevos.length;
+  }
+
+  // 4) trae de una vez TODAS las cuotas ya existentes para estos mercados
+  const mercadoIds = [...mercadoMap.values()].map((m) => m.id);
+  let cuotasExistentes = [];
+  if (mercadoIds.length > 0) {
+    const { data, error } = await supabaseAdmin
+      .from('cuotas')
+      .select('id, mercado_id, casa_apuestas, nombre_seleccion')
+      .in('mercado_id', mercadoIds);
+    if (error) throw error;
+    cuotasExistentes = data || [];
+  }
+  const cuotaMap = new Map(cuotasExistentes.map((c) => [`${c.mercado_id}|${c.casa_apuestas}|${c.nombre_seleccion}`, c]));
+
+  // 5) arma listas de cuotas a insertar (en lote) y a actualizar (en paralelo)
+  const cuotasPorCrear = [];
+  const cuotasPorActualizar = [];
+  const ahora = new Date().toISOString();
+
+  for (const ev of oddsEvents) {
+    for (const bookmaker of ev.bookmakers || []) {
+      for (const mkt of bookmaker.markets || []) {
+        const mercado = mercadoMap.get(`${ev.id}|${mkt.key}`);
+        if (!mercado) continue;
 
         for (const outcome of mkt.outcomes || []) {
-          const { data: existente } = await supabaseAdmin
-            .from('cuotas')
-            .select('id')
-            .eq('mercado_id', mercado.id)
-            .eq('casa_apuestas', bookmaker.title)
-            .eq('nombre_seleccion', outcome.name)
-            .maybeSingle();
-
+          const key = `${mercado.id}|${bookmaker.title}|${outcome.name}`;
+          const existente = cuotaMap.get(key);
           if (existente) {
-            await supabaseAdmin
-              .from('cuotas')
-              .update({ valor: outcome.price, actualizado_en: new Date().toISOString() })
-              .eq('id', existente.id);
+            cuotasPorActualizar.push({ id: existente.id, valor: outcome.price });
           } else {
-            await supabaseAdmin.from('cuotas').insert({
+            cuotasPorCrear.push({
               mercado_id: mercado.id,
               casa_apuestas: bookmaker.title,
               nombre_seleccion: outcome.name,
               valor: outcome.price,
-              actualizado_en: new Date().toISOString(),
+              actualizado_en: ahora,
             });
-            cuotasCreadas++;
           }
         }
       }
     }
+  }
+
+  if (cuotasPorCrear.length > 0) {
+    const { error: cuotaInsError } = await supabaseAdmin.from('cuotas').insert(cuotasPorCrear);
+    if (cuotaInsError) throw cuotaInsError;
+    cuotasCreadas = cuotasPorCrear.length;
+  }
+
+  if (cuotasPorActualizar.length > 0) {
+    // las actualizaciones sí necesitan una llamada por fila (valores distintos),
+    // pero se disparan todas en paralelo en vez de una por una en secuencia
+    await Promise.all(
+      cuotasPorActualizar.map((c) =>
+        supabaseAdmin.from('cuotas').update({ valor: c.valor, actualizado_en: ahora }).eq('id', c.id)
+      )
+    );
   }
 
   return { eventosCreados, mercadosCreados, cuotasCreadas };
@@ -271,41 +321,48 @@ async function syncScores(sportKey, daysFrom = 3) {
     daysFrom,
   });
 
-  let eventosActualizados = 0;
+  // filtra de una vez solo los partidos que ya terminaron y traen marcador
+  const terminados = scores.filter(
+    (ev) => ev.completed && Array.isArray(ev.scores) &&
+      ev.scores.find((s) => s.name === ev.home_team) &&
+      ev.scores.find((s) => s.name === ev.away_team)
+  );
+  if (terminados.length === 0) return { eventosActualizados: 0 };
 
-  for (const ev of scores) {
-    // la API solo manda "completed: true" cuando el partido ya terminó
-    // y trae el array "scores" con el marcador de cada equipo
-    if (!ev.completed || !Array.isArray(ev.scores)) continue;
+  // trae de una vez el estado actual de todos esos eventos (un solo round-trip)
+  const ids = terminados.map((ev) => ev.id);
+  const { data: eventosExistentes, error: selError } = await supabaseAdmin
+    .from('eventos')
+    .select('id, estado')
+    .in('id', ids);
+  if (selError) throw selError;
+  const estadoMap = new Map((eventosExistentes || []).map((e) => [e.id, e.estado]));
 
-    const localScore = ev.scores.find((s) => s.name === ev.home_team);
-    const awayScore = ev.scores.find((s) => s.name === ev.away_team);
-    if (!localScore || !awayScore) continue;
+  const ahora = new Date().toISOString();
+  const actualizaciones = terminados
+    .filter((ev) => estadoMap.has(ev.id) && estadoMap.get(ev.id) !== 'finalizado')
+    .map((ev) => {
+      const localScore = ev.scores.find((s) => s.name === ev.home_team);
+      const awayScore = ev.scores.find((s) => s.name === ev.away_team);
+      return { id: ev.id, marcador_local: parseInt(localScore.score, 10), marcador_visitante: parseInt(awayScore.score, 10) };
+    });
 
-    const { data: eventoExistente } = await supabaseAdmin
-      .from('eventos')
-      .select('id, estado')
-      .eq('id', ev.id)
-      .maybeSingle();
+  // dispara todas las actualizaciones en paralelo en vez de una por una
+  await Promise.all(
+    actualizaciones.map((u) =>
+      supabaseAdmin
+        .from('eventos')
+        .update({
+          marcador_local: u.marcador_local,
+          marcador_visitante: u.marcador_visitante,
+          estado: 'finalizado',
+          actualizado_en: ahora,
+        })
+        .eq('id', u.id)
+    )
+  );
 
-    // si el evento no está en nuestra base, o ya estaba finalizado, no hay nada que hacer
-    if (!eventoExistente || eventoExistente.estado === 'finalizado') continue;
-
-    const { error } = await supabaseAdmin
-      .from('eventos')
-      .update({
-        marcador_local: parseInt(localScore.score, 10),
-        marcador_visitante: parseInt(awayScore.score, 10),
-        estado: 'finalizado',
-        actualizado_en: new Date().toISOString(),
-      })
-      .eq('id', ev.id);
-
-    if (error) throw error;
-    eventosActualizados++;
-  }
-
-  return { eventosActualizados };
+  return { eventosActualizados: actualizaciones.length };
 }
 
 // settlePendingBets() — recorre todas las apuestas 'pendiente' e intenta
@@ -323,56 +380,82 @@ async function settlePendingBets() {
 
   let liquidadas = 0, siguenPendientes = 0, errores = 0;
 
-  for (const apuesta of pendientes || []) {
-    try {
-      const { data, error: liquidarError } = await supabaseAdmin.rpc('liquidar_apuesta', {
-        p_apuesta_id: apuesta.id,
-      });
-      if (liquidarError) throw liquidarError;
-
-      if (data && data.estado !== 'pendiente') {
-        liquidadas++;
+  // liquida en paralelo, mas en lotes pequeños para no saturar el pool de
+  // conexiones de Supabase si hay muchas apuestas pendientes a la vez
+  const lista = pendientes || [];
+  const TAMANO_LOTE = 10;
+  for (let i = 0; i < lista.length; i += TAMANO_LOTE) {
+    const lote = lista.slice(i, i + TAMANO_LOTE);
+    const resultados = await Promise.allSettled(
+      lote.map((apuesta) => supabaseAdmin.rpc('liquidar_apuesta', { p_apuesta_id: apuesta.id }))
+    );
+    for (const r of resultados) {
+      if (r.status === 'fulfilled' && !r.value.error) {
+        const data = r.value.data;
+        if (data && data.estado !== 'pendiente') liquidadas++;
+        else siguenPendientes++;
       } else {
-        siguenPendientes++;
+        console.error('Error liquidando apuesta:', r.status === 'fulfilled' ? r.value.error : r.reason);
+        errores++;
       }
-    } catch (err) {
-      console.error(`Error liquidando apuesta ${apuesta.id}:`, err.message);
-      errores++;
     }
   }
 
   return { totalPendientesRevisadas: (pendientes || []).length, liquidadas, siguenPendientes, errores };
 }
 
-// POST /api/admin/sync-all — versión manual/admin: sincroniza cuotas de
-// TODOS los deportes activos (ACTIVE_SPORTS) en una sola llamada.
-app.post('/api/admin/sync-all', requireAuth, requireAdmin, async (req, res) => {
+// syncAllSports() / settleAllSports() — corren sync/settle para todos los
+// deportes activos EN PARALELO (no uno tras otro en secuencia), para que la
+// función serverless no se quede sin tiempo al cubrir varios deportes.
+async function syncAllSports() {
   const resultados = {};
-  for (const sportKey of ACTIVE_SPORTS) {
-    try {
-      resultados[sportKey] = await syncSport(sportKey);
-    } catch (error) {
-      console.error(`Error sincronizando ${sportKey}:`, error.message);
-      resultados[sportKey] = { error: error.message };
+  const settled = await Promise.allSettled(ACTIVE_SPORTS.map((sportKey) => syncSport(sportKey)));
+  settled.forEach((r, i) => {
+    const sportKey = ACTIVE_SPORTS[i];
+    if (r.status === 'fulfilled') {
+      resultados[sportKey] = r.value;
+    } else {
+      console.error(`Error sincronizando ${sportKey}:`, r.reason?.message || r.reason);
+      resultados[sportKey] = { error: r.reason?.message || String(r.reason) };
     }
+  });
+  return resultados;
+}
+
+async function settleAllSports() {
+  const scoresPorDeporte = {};
+  const settled = await Promise.allSettled(ACTIVE_SPORTS.map((sportKey) => syncScores(sportKey)));
+  settled.forEach((r, i) => {
+    const sportKey = ACTIVE_SPORTS[i];
+    if (r.status === 'fulfilled') {
+      scoresPorDeporte[sportKey] = r.value;
+    } else {
+      console.error(`Error trayendo scores de ${sportKey}:`, r.reason?.message || r.reason);
+      scoresPorDeporte[sportKey] = { error: r.reason?.message || String(r.reason) };
+    }
+  });
+  const settleResult = await settlePendingBets();
+  return { scoresPorDeporte, ...settleResult };
+}
+
+app.post('/api/admin/sync-all', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    res.json(await syncAllSports());
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message });
   }
-  res.json(resultados);
 });
 
 // POST /api/admin/settle-all — versión manual/admin: trae resultados y
 // liquida apuestas pendientes para TODOS los deportes activos.
 app.post('/api/admin/settle-all', requireAuth, requireAdmin, async (req, res) => {
-  const scoresPorDeporte = {};
-  for (const sportKey of ACTIVE_SPORTS) {
-    try {
-      scoresPorDeporte[sportKey] = await syncScores(sportKey);
-    } catch (error) {
-      console.error(`Error trayendo scores de ${sportKey}:`, error.message);
-      scoresPorDeporte[sportKey] = { error: error.message };
-    }
+  try {
+    res.json(await settleAllSports());
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message });
   }
-  const settleResult = await settlePendingBets();
-  res.json({ scoresPorDeporte, ...settleResult });
 });
 
 // POST /api/cron/sync-all — versión para cron (Vercel o externo): sincroniza
@@ -382,16 +465,12 @@ app.post('/api/cron/sync-all', async (req, res) => {
   if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
     return res.status(401).json({ error: 'No autorizado' });
   }
-  const resultados = {};
-  for (const sportKey of ACTIVE_SPORTS) {
-    try {
-      resultados[sportKey] = await syncSport(sportKey);
-    } catch (error) {
-      console.error(`Error sincronizando ${sportKey}:`, error.message);
-      resultados[sportKey] = { error: error.message };
-    }
+  try {
+    res.json(await syncAllSports());
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message });
   }
-  res.json(resultados);
 });
 
 // POST /api/cron/settle-all — versión para cron (Vercel o externo): trae
@@ -404,17 +483,12 @@ app.post('/api/cron/settle-all', async (req, res) => {
   if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
     return res.status(401).json({ error: 'No autorizado' });
   }
-  const scoresPorDeporte = {};
-  for (const sportKey of ACTIVE_SPORTS) {
-    try {
-      scoresPorDeporte[sportKey] = await syncScores(sportKey);
-    } catch (error) {
-      console.error(`Error trayendo scores de ${sportKey}:`, error.message);
-      scoresPorDeporte[sportKey] = { error: error.message };
-    }
+  try {
+    res.json(await settleAllSports());
+  } catch (error) {
+    console.error(error);
+    res.status(502).json({ error: error.message });
   }
-  const settleResult = await settlePendingBets();
-  res.json({ scoresPorDeporte, ...settleResult });
 });
 
 // POST /api/admin/sync/:sportKey — versión manual/admin para traer cuotas.
