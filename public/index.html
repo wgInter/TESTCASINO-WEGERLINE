@@ -696,7 +696,7 @@ document.getElementById('casinoTabs').onclick=(e)=>{
   const game=tab.dataset.game;
   document.getElementById('slotGamePanel').style.display=game==='slot'?'block':'none';
   document.getElementById('blackjackGamePanel').style.display=game==='blackjack'?'block':'none';
-  if(game==='blackjack')initBlackjack();
+  if(game==='blackjack'){initBlackjack();fetchBjMesa();}
 };
 
 // =========================================================
@@ -838,10 +838,16 @@ function initBlackjack(){
     .on('postgres_changes',{event:'*',schema:'public',table:'blackjack_asientos'},()=>fetchBjMesa())
     .subscribe();
 
-  // "tick" propio: cada 2s, si estamos viendo la mesa, le avisamos al
-  // backend para que avance fases/turnos vencidos.
+  // "tick" propio: cada 2s, le avisamos al backend para que avance
+  // fases/turnos vencidos, y SIEMPRE volvemos a pedir el estado fresco
+  // (no dependemos solo de que Realtime avise — así la mesa nunca se
+  // queda "congelada" aunque Realtime tarde o falle).
   bjTickTimer=setInterval(async()=>{
-    if(bjMesaId)await fetch(`${BACKEND_URL}/api/blackjack/tick`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesaId:bjMesaId})});
+    if(!bjMesaId)return;
+    try{
+      await fetch(`${BACKEND_URL}/api/blackjack/tick`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesaId:bjMesaId})});
+    }catch(e){console.error('tick falló',e);}
+    fetchBjMesa();
   },2000);
 
   // refresco visual del contador cada segundo sin esperar a Realtime
