@@ -101,6 +101,10 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .bj-dealer-label{font-size:11px;color:var(--text-low);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 .bj-cards{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;min-height:56px}
 .bj-card{width:38px;height:52px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#c0182c;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+@keyframes bjDealIn{0%{opacity:0;transform:translateY(-40px) translateX(10px) scale(.6) rotate(-12deg)}60%{opacity:1;transform:translateY(4px) scale(1.05) rotate(2deg)}100%{opacity:1;transform:translateY(0) scale(1) rotate(0)}}
+.bj-card.dealt{animation:bjDealIn .38s cubic-bezier(.2,.8,.3,1.2) both}
+@keyframes bjWinPulse{0%,100%{box-shadow:0 2px 6px rgba(0,0,0,.4)}50%{box-shadow:0 0 14px 2px rgba(44,230,143,.7)}}
+.bj-seat.just-won{animation:bjWinPulse .7s ease-in-out 2}
 .bj-card.black{color:#181818}
 .bj-card.back{background:repeating-linear-gradient(45deg,#3a2a6d,#3a2a6d 4px,#4a3a8d 4px,#4a3a8d 8px);color:transparent}
 .bj-value{font-size:11px;color:var(--text-mid);margin-top:4px;font-family:'JetBrains Mono'}
@@ -703,10 +707,20 @@ document.getElementById('casinoTabs').onclick=(e)=>{
 // BLACKJACK MULTIJUGADOR
 // =========================================================
 let bjMesaId=null,bjState=null,bjMySeat=null,bjTickTimer=null,bjChannel=null,bjInitialized=false;
+// rastrea cuántas cartas había antes (por asiento y del dealer) para
+// animar solo las cartas NUEVAS en cada refresco, no todas de nuevo
+let bjPrevCounts={dealer:0,seats:{1:0,2:0,3:0,4:0,5:0}};
+let bjPrevBackShown=false;
 
 const bjSuitColor=c=>(c.includes('♥')||c.includes('♦'))?'':'black';
-function bjCardHtml(carta){return `<div class="bj-card ${bjSuitColor(carta)}">${carta}</div>`;}
-function bjBackHtml(){return `<div class="bj-card back">?</div>`;}
+function bjCardHtml(carta,isNew,delayIdx){
+  const cls=isNew?` dealt" style="animation-delay:${delayIdx*120}ms`:'';
+  return `<div class="bj-card ${bjSuitColor(carta)}${cls}">${carta}</div>`;
+}
+function bjBackHtml(isNew,delayIdx){
+  const cls=isNew?` dealt" style="animation-delay:${delayIdx*120}ms`:'';
+  return `<div class="bj-card back${cls}">?</div>`;
+}
 
 async function fetchBjMesa(){
   try{
@@ -726,8 +740,18 @@ function renderBlackjack(){
   if(!bjState)return;
   const{mesa,asientos}=bjState;
 
+  // si la ronda se reinició (mesa sin cartas del dealer), resetea el
+  // rastreo para que el próximo reparto anime todo desde cero
+  if(mesa.cartas_dealer.length===0){bjPrevCounts.dealer=0;bjPrevBackShown=false;}
+
+  const dealerCardsHtml=mesa.cartas_dealer.map((c,i)=>bjCardHtml(c,i>=bjPrevCounts.dealer,i-bjPrevCounts.dealer)).join('');
+  const showBack=mesa.dealer_carta_oculta&&mesa.cartas_dealer.length>0;
+  const backIsNew=showBack&&!bjPrevBackShown;
   document.getElementById('bjDealerCards').innerHTML=
-    mesa.cartas_dealer.map(bjCardHtml).join('')+((mesa.dealer_carta_oculta&&mesa.cartas_dealer.length>0)?bjBackHtml():'');
+    dealerCardsHtml+(showBack?bjBackHtml(backIsNew,mesa.cartas_dealer.length-bjPrevCounts.dealer):'');
+  bjPrevBackShown=showBack;
+  bjPrevCounts.dealer=mesa.cartas_dealer.length;
+
   document.getElementById('bjDealerValue').textContent=
     mesa.dealer_carta_oculta?'':`Valor: ${valorManoBJ(mesa.cartas_dealer)}`;
 
@@ -740,16 +764,23 @@ function renderBlackjack(){
     if(a.estado!=='vacio')classes.push('occupied');
     if(isMine)classes.push('mine');
     if(isTurn)classes.push('active-turn');
+    if(a.estado==='gano')classes.push('just-won');
 
     if(a.estado==='vacio'){
+      bjPrevCounts.seats[a.asiento]=0;
       return `<div class="${classes.join(' ')}" onclick="bjSentarse(${a.asiento})"><div class="bj-seat-empty">Asiento ${a.asiento}<br>Sentarse</div></div>`;
     }
+    const cartas=a.cartas||[];
+    const prevCount=cartas.length<bjPrevCounts.seats[a.asiento]?0:bjPrevCounts.seats[a.asiento]; // ronda nueva: reinicia
+    const cartasHtml=cartas.map((c,i)=>bjCardHtml(c,i>=prevCount,i-prevCount)).join('');
+    bjPrevCounts.seats[a.asiento]=cartas.length;
+
     const resultColors={gano:'style="background:rgba(44,230,143,.2);color:var(--accent-green)"',perdio:'style="background:rgba(255,76,106,.2);color:var(--accent-red)"',empate:'style="background:rgba(154,166,188,.2);color:var(--text-mid)"'};
     const resultLabels={gano:'GANÓ',perdio:'PERDIÓ',pasado:'SE PASÓ',empate:'EMPATE'};
     return `<div class="${classes.join(' ')}">
       <div class="bj-seat-name">${esc(a.nombre_usuario||'Jugador')}</div>
-      <div class="bj-cards" style="min-height:auto;transform:scale(.8)">${(a.cartas||[]).map(bjCardHtml).join('')}</div>
-      ${a.cartas&&a.cartas.length?`<div class="bj-value">${valorManoBJ(a.cartas)}</div>`:''}
+      <div class="bj-cards" style="min-height:auto;transform:scale(.8)">${cartasHtml}</div>
+      ${cartas.length?`<div class="bj-value">${valorManoBJ(cartas)}</div>`:''}
       ${a.apuesta>0?`<div class="bj-seat-bet">${fmtMoney(a.apuesta)}</div>`:''}
       ${a.resultado?`<div class="bj-seat-result" ${resultColors[a.resultado]||''}>${resultLabels[a.resultado]||a.resultado}</div>`:''}
     </div>`;
