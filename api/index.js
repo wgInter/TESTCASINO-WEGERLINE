@@ -611,6 +611,100 @@ app.post('/api/casino/slot/spin', requireAuth, async (req, res) => {
   res.json(data);
 });
 
+// =========================================================
+// BLACKJACK MULTIJUGADOR
+// =========================================================
+
+// GET /api/blackjack/mesa — estado público de la mesa principal.
+// Pública (no requiere login) para poder mostrar la mesa antes de entrar.
+app.get('/api/blackjack/mesa', async (_req, res) => {
+  const { data: mesa, error: mesaError } = await supabaseAdmin
+    .from('mesas_blackjack')
+    .select('id, nombre, estado, cartas_dealer, dealer_carta_oculta, turno_asiento, turno_expira_en, fase_expira_en')
+    .limit(1)
+    .single();
+  if (mesaError) return res.status(500).json({ error: mesaError.message });
+
+  const { data: asientos, error: asientosError } = await supabaseAdmin
+    .from('blackjack_asientos')
+    .select('asiento, usuario_id, nombre_usuario, apuesta, cartas, estado, resultado, ganancia')
+    .eq('mesa_id', mesa.id)
+    .order('asiento', { ascending: true });
+  if (asientosError) return res.status(500).json({ error: asientosError.message });
+
+  // Nota de seguridad: esta respuesta NUNCA incluye el mazo ni la carta
+  // oculta real del dealer — esos viven solo en blackjack_mazos, una tabla
+  // que este endpoint ni siquiera consulta.
+  res.json({ mesa, asientos });
+});
+
+// POST /api/blackjack/tick — cualquier cliente conectado la llama cada
+// pocos segundos para que la mesa avance de fase si el tiempo ya venció
+// (repartir cuando se acaba el tiempo de apuestas, plantar automático si
+// se acaba el turno, hacer jugar al dealer, reiniciar la ronda). No
+// requiere login: es un simple "empujón" de reloj, sin efectos de dinero
+// directos más allá de lo que las funciones ya validan internamente.
+app.post('/api/blackjack/tick', async (req, res) => {
+  const { mesaId } = req.body;
+  if (!mesaId) return res.status(400).json({ error: 'mesaId es requerido' });
+  const { error } = await supabaseAdmin.rpc('bj_tick', { p_mesa_id: mesaId });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+app.post('/api/blackjack/sentarse', requireAuth, async (req, res) => {
+  const { mesaId, asiento } = req.body;
+  if (!mesaId || !asiento) return res.status(400).json({ error: 'mesaId y asiento son requeridos' });
+
+  const { data: usuario, error: usuarioError } = await supabaseAdmin
+    .from('usuarios')
+    .select('nombre_usuario, email')
+    .eq('id', req.user.id)
+    .single();
+  if (usuarioError) return res.status(500).json({ error: usuarioError.message });
+
+  const { data, error } = await supabaseAdmin.rpc('bj_sentarse', {
+    p_mesa_id: mesaId,
+    p_usuario_id: req.user.id,
+    p_asiento: asiento,
+    p_nombre_usuario: usuario.nombre_usuario || usuario.email,
+  });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/blackjack/pararse', requireAuth, async (req, res) => {
+  const { mesaId } = req.body;
+  if (!mesaId) return res.status(400).json({ error: 'mesaId es requerido' });
+  const { data, error } = await supabaseAdmin.rpc('bj_pararse', { p_mesa_id: mesaId, p_usuario_id: req.user.id });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/blackjack/apostar', requireAuth, async (req, res) => {
+  const { mesaId, monto } = req.body;
+  if (!mesaId || !monto) return res.status(400).json({ error: 'mesaId y monto son requeridos' });
+  const { data, error } = await supabaseAdmin.rpc('bj_apostar', { p_mesa_id: mesaId, p_usuario_id: req.user.id, p_monto: monto });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/blackjack/pedir-carta', requireAuth, async (req, res) => {
+  const { mesaId } = req.body;
+  if (!mesaId) return res.status(400).json({ error: 'mesaId es requerido' });
+  const { data, error } = await supabaseAdmin.rpc('bj_pedir_carta', { p_mesa_id: mesaId, p_usuario_id: req.user.id });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
+app.post('/api/blackjack/plantarse', requireAuth, async (req, res) => {
+  const { mesaId } = req.body;
+  if (!mesaId) return res.status(400).json({ error: 'mesaId es requerido' });
+  const { data, error } = await supabaseAdmin.rpc('bj_plantarse', { p_mesa_id: mesaId, p_usuario_id: req.user.id });
+  if (error) return res.status(400).json({ error: error.message });
+  res.json(data);
+});
+
 // GET /api/apuestas — historial de apuestas del usuario, con sus selecciones
 app.get('/api/apuestas', requireAuth, async (req, res) => {
   const { data, error } = await supabaseAdmin

@@ -96,7 +96,32 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .slot-paytable span{background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:4px 8px}
 .casino-tabs{display:flex;gap:8px;margin-bottom:18px;justify-content:center}
 .casino-tabs .sport-tab.disabled{opacity:.4;cursor:not-allowed}
-@media(max-width:880px){.hero-grid{grid-template-columns:1fr}.nav-links{display:none}.match-row{grid-template-columns:1fr}.bet-slip{right:10px;left:10px;width:auto;bottom:10px}}
+.bj-table{background:radial-gradient(ellipse at center,#0d3b2e,#081f18);border:3px solid #1a5c42;border-radius:200px 200px 20px 20px;padding:30px 20px 20px;position:relative;min-height:420px}
+.bj-dealer-area{text-align:center;margin-bottom:24px}
+.bj-dealer-label{font-size:11px;color:var(--text-low);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.bj-cards{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;min-height:56px}
+.bj-card{width:38px;height:52px;background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#c0182c;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.bj-card.black{color:#181818}
+.bj-card.back{background:repeating-linear-gradient(45deg,#3a2a6d,#3a2a6d 4px,#4a3a8d 4px,#4a3a8d 8px);color:transparent}
+.bj-value{font-size:11px;color:var(--text-mid);margin-top:4px;font-family:'JetBrains Mono'}
+.bj-seats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.bj-seat{background:rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 6px;text-align:center;min-height:130px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:.15s}
+.bj-seat:hover{border-color:var(--accent-green)}
+.bj-seat.occupied{cursor:default}
+.bj-seat.mine{border-color:var(--accent-violet)}
+.bj-seat.active-turn{border-color:var(--accent-green);box-shadow:0 0 12px rgba(44,230,143,.4)}
+.bj-seat-name{font-size:10px;color:var(--text-mid);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bj-seat-empty{font-size:11px;color:var(--text-low);margin:auto}
+.bj-seat-bet{font-size:11px;color:var(--accent-green);font-family:'JetBrains Mono'}
+.bj-seat-result{font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;margin-top:2px}
+.bj-controls{display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.bj-controls button{padding:10px 18px;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer}
+.bj-btn-hit{background:var(--accent-green);color:#04140d}
+.bj-btn-stand{background:var(--accent-red);color:#fff}
+.bj-btn-bet{background:var(--accent-violet);color:#fff}
+.bj-status-line{text-align:center;font-size:12px;color:var(--text-mid);margin-top:10px}
+.bj-timer{font-family:'JetBrains Mono';color:var(--accent-green);font-weight:700}
+@media(max-width:880px){.hero-grid{grid-template-columns:1fr}.nav-links{display:none}.match-row{grid-template-columns:1fr}.bet-slip{right:10px;left:10px;width:auto;bottom:10px}.bj-seats{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body>
@@ -197,11 +222,12 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
   <div class="modal modal-wide">
     <h3>🎰 Casino</h3>
     <p class="sub">Tragamonedas — juega con tu saldo real.</p>
-    <div class="casino-tabs">
-      <div class="sport-tab active">Clásica</div>
+    <div class="casino-tabs" id="casinoTabs">
+      <div class="sport-tab active" data-game="slot">Tragamonedas</div>
+      <div class="sport-tab" data-game="blackjack">Blackjack</div>
       <div class="sport-tab disabled" title="Próximamente">Ruleta</div>
-      <div class="sport-tab disabled" title="Próximamente">Blackjack</div>
     </div>
+    <div id="slotGamePanel">
     <div class="slot-machine">
       <div class="slot-reels">
         <div class="slot-reel" id="reel1">🍒</div>
@@ -215,6 +241,26 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
       <div class="slot-result" id="slotResult"></div>
       <div class="slot-paytable">
         <span>🍒🍒🍒 = x3</span><span>🔔🔔🔔 = x5</span><span>⭐⭐⭐ = x8</span><span>💎💎💎 = x15</span><span>7️⃣7️⃣7️⃣ = x40</span><span>Par = devuelve apuesta</span>
+      </div>
+    </div>
+    </div>
+    <div id="blackjackGamePanel" style="display:none">
+      <div class="bj-table">
+        <div class="bj-dealer-area">
+          <div class="bj-dealer-label">Dealer</div>
+          <div class="bj-cards" id="bjDealerCards"></div>
+          <div class="bj-value" id="bjDealerValue"></div>
+        </div>
+        <div class="bj-seats" id="bjSeats"></div>
+      </div>
+      <div class="bj-status-line" id="bjStatusLine">Conectando a la mesa...</div>
+      <div class="slot-bet-row" id="bjBetRow" style="display:none">
+        <input type="number" id="bjBetAmount" value="1000" min="1" step="100">
+        <button class="bj-controls-btn btn btn-primary" id="bjBetBtn" style="width:auto;padding:10px 20px">APOSTAR</button>
+      </div>
+      <div class="bj-controls" id="bjControls" style="display:none">
+        <button class="bj-btn-hit" id="bjHitBtn">PEDIR CARTA</button>
+        <button class="bj-btn-stand" id="bjStandBtn">PLANTARSE</button>
       </div>
     </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="casinoClose" style="flex:1">Cerrar</button></div>
@@ -638,6 +684,148 @@ async function spinSlot(){
 document.getElementById('casinoLink').onclick=(e)=>{e.preventDefault();openCasino();};
 document.getElementById('casinoClose').onclick=closeCasino;
 document.getElementById('slotSpinBtn').onclick=spinSlot;
+
+document.getElementById('casinoTabs').onclick=(e)=>{
+  const tab=e.target.closest('.sport-tab');
+  if(!tab||tab.classList.contains('disabled'))return;
+  document.querySelectorAll('#casinoTabs .sport-tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  const game=tab.dataset.game;
+  document.getElementById('slotGamePanel').style.display=game==='slot'?'block':'none';
+  document.getElementById('blackjackGamePanel').style.display=game==='blackjack'?'block':'none';
+  if(game==='blackjack')initBlackjack();
+};
+
+// =========================================================
+// BLACKJACK MULTIJUGADOR
+// =========================================================
+let bjMesaId=null,bjState=null,bjMySeat=null,bjTickTimer=null,bjChannel=null,bjInitialized=false;
+
+const bjSuitColor=c=>(c.includes('♥')||c.includes('♦'))?'':'black';
+function bjCardHtml(carta){return `<div class="bj-card ${bjSuitColor(carta)}">${carta}</div>`;}
+function bjBackHtml(){return `<div class="bj-card back">?</div>`;}
+
+async function fetchBjMesa(){
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/blackjack/mesa`);
+    if(!r.ok)throw new Error(`Backend ${r.status}`);
+    const data=await r.json();
+    bjMesaId=data.mesa.id;
+    bjState=data;
+    renderBlackjack();
+  }catch(e){
+    console.error(e);
+    document.getElementById('bjStatusLine').textContent='No se pudo cargar la mesa.';
+  }
+}
+
+function renderBlackjack(){
+  if(!bjState)return;
+  const{mesa,asientos}=bjState;
+
+  document.getElementById('bjDealerCards').innerHTML=
+    mesa.cartas_dealer.map(bjCardHtml).join('')+(mesa.dealer_carta_oculta?bjBackHtml():'');
+  document.getElementById('bjDealerValue').textContent=
+    mesa.dealer_carta_oculta?'':`Valor: ${valorManoBJ(mesa.cartas_dealer)}`;
+
+  bjMySeat=asientos.find(a=>session&&a.usuario_id===session.user.id)||null;
+
+  document.getElementById('bjSeats').innerHTML=asientos.map(a=>{
+    const isMine=session&&a.usuario_id===session.user.id;
+    const isTurn=mesa.turno_asiento===a.asiento;
+    const classes=['bj-seat'];
+    if(a.estado!=='vacio')classes.push('occupied');
+    if(isMine)classes.push('mine');
+    if(isTurn)classes.push('active-turn');
+
+    if(a.estado==='vacio'){
+      return `<div class="${classes.join(' ')}" onclick="bjSentarse(${a.asiento})"><div class="bj-seat-empty">Asiento ${a.asiento}<br>Sentarse</div></div>`;
+    }
+    const resultColors={gano:'style="background:rgba(44,230,143,.2);color:var(--accent-green)"',perdio:'style="background:rgba(255,76,106,.2);color:var(--accent-red)"',empate:'style="background:rgba(154,166,188,.2);color:var(--text-mid)"'};
+    const resultLabels={gano:'GANÓ',perdio:'PERDIÓ',pasado:'SE PASÓ',empate:'EMPATE'};
+    return `<div class="${classes.join(' ')}">
+      <div class="bj-seat-name">${esc(a.nombre_usuario||'Jugador')}</div>
+      <div class="bj-cards" style="min-height:auto;transform:scale(.8)">${(a.cartas||[]).map(bjCardHtml).join('')}</div>
+      ${a.cartas&&a.cartas.length?`<div class="bj-value">${valorManoBJ(a.cartas)}</div>`:''}
+      ${a.apuesta>0?`<div class="bj-seat-bet">${fmtMoney(a.apuesta)}</div>`:''}
+      ${a.resultado?`<div class="bj-seat-result" ${resultColors[a.resultado]||''}>${resultLabels[a.resultado]||a.resultado}</div>`:''}
+    </div>`;
+  }).join('');
+
+  const statusMap={esperando:'Esperando apuestas...',apostando:'Fase de apuestas',repartiendo:'Repartiendo cartas...',turnos:'En juego',dealer:'Turno del dealer...',liquidando:'Ronda terminada'};
+  let statusText=statusMap[mesa.estado]||mesa.estado;
+  if(mesa.estado==='turnos'&&mesa.turno_expira_en){
+    const segs=Math.max(0,Math.round((new Date(mesa.turno_expira_en)-new Date())/1000));
+    statusText+=` — <span class="bj-timer">${segs}s</span>`;
+  }
+  document.getElementById('bjStatusLine').innerHTML=statusText;
+
+  const betRow=document.getElementById('bjBetRow');
+  const controls=document.getElementById('bjControls');
+  betRow.style.display=(bjMySeat&&bjMySeat.estado==='sentado'&&mesa.estado==='esperando')?'flex':'none';
+  controls.style.display=(bjMySeat&&bjMySeat.estado==='jugando'&&mesa.turno_asiento===bjMySeat.asiento)?'flex':'none';
+}
+
+function valorManoBJ(cartas){
+  let total=0,ases=0;
+  for(const c of cartas){
+    const rango=c.slice(0,-1);
+    if(rango==='A'){ases++;total+=11;}
+    else if(['J','Q','K'].includes(rango))total+=10;
+    else total+=Number(rango);
+  }
+  while(total>21&&ases>0){total-=10;ases--;}
+  return total;
+}
+
+async function bjCall(path,body={}){
+  if(!session){document.getElementById('bjStatusLine').textContent='Inicia sesión para jugar.';return null;}
+  try{
+    const r=await fetch(`${BACKEND_URL}${path}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({mesaId:bjMesaId,...body})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||'Error');
+    return data;
+  }catch(e){
+    document.getElementById('bjStatusLine').textContent=e.message;
+    return null;
+  }
+}
+
+window.bjSentarse=async(asiento)=>{await bjCall('/api/blackjack/sentarse',{asiento});fetchBjMesa();};
+document.getElementById('bjBetBtn').onclick=async()=>{
+  const monto=Number(document.getElementById('bjBetAmount').value);
+  if(!monto||monto<=0)return;
+  await bjCall('/api/blackjack/apostar',{monto});
+  fetchBjMesa();
+};
+document.getElementById('bjHitBtn').onclick=async()=>{await bjCall('/api/blackjack/pedir-carta');fetchBjMesa();};
+document.getElementById('bjStandBtn').onclick=async()=>{await bjCall('/api/blackjack/plantarse');fetchBjMesa();};
+
+function initBlackjack(){
+  if(bjInitialized)return;
+  bjInitialized=true;
+  fetchBjMesa();
+
+  // Realtime: cuando cambia la mesa o los asientos, volvemos a pedir el
+  // estado sanitizado al backend (nunca confiamos en el payload crudo).
+  bjChannel=sb.channel('blackjack-mesa')
+    .on('postgres_changes',{event:'*',schema:'public',table:'mesas_blackjack'},()=>fetchBjMesa())
+    .on('postgres_changes',{event:'*',schema:'public',table:'blackjack_asientos'},()=>fetchBjMesa())
+    .subscribe();
+
+  // "tick" propio: cada 2s, si estamos viendo la mesa, le avisamos al
+  // backend para que avance fases/turnos vencidos.
+  bjTickTimer=setInterval(async()=>{
+    if(bjMesaId)await fetch(`${BACKEND_URL}/api/blackjack/tick`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mesaId:bjMesaId})});
+  },2000);
+
+  // refresco visual del contador cada segundo sin esperar a Realtime
+  setInterval(()=>{if(bjState)renderBlackjack();},1000);
+}
 
 sb.auth.onAuthStateChange((_event,newSession)=>{onAuthChange(newSession)});
 sb.auth.getSession().then(({data})=>onAuthChange(data.session));
