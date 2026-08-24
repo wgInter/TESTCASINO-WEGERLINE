@@ -254,6 +254,9 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
         <div class="bj-seats" id="bjSeats"></div>
       </div>
       <div class="bj-status-line" id="bjStatusLine">Conectando a la mesa...</div>
+      <div class="bj-controls" id="bjLeaveRow" style="display:none">
+        <button class="bj-btn-stand" id="bjLeaveBtn" style="background:var(--bg-2);border:1px solid var(--border);color:var(--text-mid)">SALIR DE LA MESA</button>
+      </div>
       <div class="slot-bet-row" id="bjBetRow" style="display:none">
         <input type="number" id="bjBetAmount" value="1000" min="1" step="100">
         <button class="bj-controls-btn btn btn-primary" id="bjBetBtn" style="width:auto;padding:10px 20px">APOSTAR</button>
@@ -724,7 +727,7 @@ function renderBlackjack(){
   const{mesa,asientos}=bjState;
 
   document.getElementById('bjDealerCards').innerHTML=
-    mesa.cartas_dealer.map(bjCardHtml).join('')+(mesa.dealer_carta_oculta?bjBackHtml():'');
+    mesa.cartas_dealer.map(bjCardHtml).join('')+((mesa.dealer_carta_oculta&&mesa.cartas_dealer.length>0)?bjBackHtml():'');
   document.getElementById('bjDealerValue').textContent=
     mesa.dealer_carta_oculta?'':`Valor: ${valorManoBJ(mesa.cartas_dealer)}`;
 
@@ -764,6 +767,19 @@ function renderBlackjack(){
   const controls=document.getElementById('bjControls');
   betRow.style.display=(bjMySeat&&bjMySeat.estado==='sentado'&&mesa.estado==='esperando')?'flex':'none';
   controls.style.display=(bjMySeat&&bjMySeat.estado==='jugando'&&mesa.turno_asiento===bjMySeat.asiento)?'flex':'none';
+
+  const leaveRow=document.getElementById('bjLeaveRow');
+  const leaveBtn=document.getElementById('bjLeaveBtn');
+  if(bjMySeat){
+    leaveRow.style.display='flex';
+    const puedeSalir=bjMySeat.estado==='sentado';
+    leaveBtn.disabled=!puedeSalir;
+    leaveBtn.style.opacity=puedeSalir?'1':'.5';
+    leaveBtn.style.cursor=puedeSalir?'pointer':'not-allowed';
+    leaveBtn.title=puedeSalir?'':'Espera a que termine la ronda para salir';
+  }else{
+    leaveRow.style.display='none';
+  }
 }
 
 function valorManoBJ(cartas){
@@ -804,6 +820,11 @@ document.getElementById('bjBetBtn').onclick=async()=>{
 };
 document.getElementById('bjHitBtn').onclick=async()=>{await bjCall('/api/blackjack/pedir-carta');fetchBjMesa();};
 document.getElementById('bjStandBtn').onclick=async()=>{await bjCall('/api/blackjack/plantarse');fetchBjMesa();};
+document.getElementById('bjLeaveBtn').onclick=async()=>{
+  if(document.getElementById('bjLeaveBtn').disabled)return;
+  await bjCall('/api/blackjack/pararse');
+  fetchBjMesa();
+};
 
 function initBlackjack(){
   if(bjInitialized)return;
