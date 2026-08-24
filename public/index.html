@@ -64,6 +64,26 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .modal-wide-body{overflow-y:auto;margin:0 -26px;padding:0 26px}
 .bets-empty{padding:36px 10px;text-align:center;color:var(--text-low);font-size:13px}
 .bet-history-item{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.profile-header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.profile-avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--accent-green),var(--accent-violet));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#04140d;flex-shrink:0}
+.profile-name-row{display:flex;align-items:center;gap:8px}
+.profile-name-row input{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text-hi);font-size:14px;font-weight:700;width:150px}
+.profile-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:rgba(139,108,255,.14);color:var(--accent-violet)}
+.profile-meta{font-size:11px;color:var(--text-low);margin-top:2px}
+.profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.profile-stat{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.profile-stat-label{font-size:10px;color:var(--text-low);text-transform:uppercase;letter-spacing:.5px}
+.profile-stat-value{font-family:'JetBrains Mono';font-size:18px;font-weight:700;margin-top:2px}
+.profile-section-title{font-size:12px;font-weight:700;color:var(--text-mid);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px}
+.tx-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
+.tx-item:last-child{border-bottom:none}
+.tx-tipo{color:var(--text-hi);font-weight:600}
+.tx-fecha{font-size:10px;color:var(--text-low)}
+.tx-monto{font-family:'JetBrains Mono';font-weight:700}
+.tx-monto.pos{color:var(--accent-green)}
+.tx-monto.neg{color:var(--accent-red)}
+.profile-password-row{display:flex;gap:8px;margin-top:6px}
+.profile-password-row input{flex:1;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-hi)}
 .bhi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
 .bhi-match{font-size:13px;font-weight:600}
 .bhi-date{font-size:11px;color:var(--text-low);margin-top:3px}
@@ -138,7 +158,7 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
     <a href="#" class="active">En Vivo</a><a href="#">Deportes</a><a href="#" id="casinoLink">Casino</a><a href="#">Promociones</a><a href="#" id="misApuestasLink">Mis Apuestas</a>
   </div>
   <div class="nav-actions">
-    <div class="balance-pill" id="balancePill" style="display:none">💰 <span class="mono" id="balanceAmount">$0.00</span></div>
+    <div class="balance-pill" id="balancePill" style="display:none;cursor:pointer" title="Ver mi perfil">💰 <span class="mono" id="balanceAmount">$0.00</span></div>
     <button class="btn btn-ghost" id="loginBtn">Iniciar sesión</button>
     <button class="btn btn-primary" id="signupBtn">Registrarse</button>
     <button class="btn btn-ghost" id="logoutBtn" style="display:none">Cerrar sesión</button>
@@ -271,6 +291,45 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
       </div>
     </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="casinoClose" style="flex:1">Cerrar</button></div>
+  </div>
+</div>
+
+<div id="profileModal" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <div class="profile-header">
+      <div class="profile-avatar" id="profileAvatar">?</div>
+      <div>
+        <div class="profile-name-row">
+          <span id="profileNameDisplay" style="font-weight:700;font-size:16px"></span>
+          <button class="btn btn-ghost" id="profileEditNameBtn" style="padding:4px 10px;font-size:11px">Editar</button>
+          <span class="profile-badge" id="profileAdminBadge" style="display:none">ADMIN</span>
+        </div>
+        <div class="profile-name-row" id="profileNameEditRow" style="display:none;margin-top:6px">
+          <input type="text" id="profileNameInput" maxlength="40">
+          <button class="btn btn-primary" id="profileSaveNameBtn" style="padding:6px 12px;font-size:11px;width:auto">Guardar</button>
+          <button class="btn btn-ghost" id="profileCancelNameBtn" style="padding:6px 12px;font-size:11px;width:auto">Cancelar</button>
+        </div>
+        <div class="profile-meta" id="profileEmail"></div>
+        <div class="profile-meta" id="profileMemberSince"></div>
+      </div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="profile-stat"><div class="profile-stat-label">Saldo actual</div><div class="profile-stat-value" id="profileSaldo">-</div></div>
+      <div class="profile-stat"><div class="profile-stat-label">Estado de cuenta</div><div class="profile-stat-value" id="profileEstado" style="font-size:14px">-</div></div>
+    </div>
+
+    <div class="profile-section-title">Cambiar contraseña</div>
+    <div class="profile-password-row">
+      <input type="password" id="profileNewPassword" placeholder="Nueva contraseña (mín. 6 caracteres)">
+      <button class="btn btn-primary" id="profileChangePasswordBtn" style="width:auto;padding:10px 18px">Cambiar</button>
+    </div>
+    <div class="profile-meta" id="profilePasswordMsg" style="margin-top:6px"></div>
+
+    <div class="profile-section-title">Historial de transacciones</div>
+    <div class="modal-wide-body" id="profileTxList" style="max-height:220px"><div class="bets-empty">Cargando...</div></div>
+
+    <div class="modal-actions"><button class="btn btn-ghost" id="profileClose" style="flex:1">Cerrar</button></div>
   </div>
 </div>
 
@@ -546,6 +605,116 @@ async function refreshSaldo(){
     console.error('No se pudo obtener el saldo',e);
   }
 }
+
+// =========================================================
+// PERFIL DE USUARIO
+// =========================================================
+let profileData=null,profileTxs=[];
+
+async function openProfile(){
+  if(!session){document.getElementById('loginModal')?.style&&openAuth('login');return;}
+  document.getElementById('profileModal').style.display='flex';
+  document.getElementById('profileNameEditRow').style.display='none';
+  document.getElementById('profileNameDisplay').style.display='inline';
+  document.getElementById('profileTxList').innerHTML='<div class="bets-empty">Cargando...</div>';
+
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/usuarios/me`,{headers:{Authorization:`Bearer ${session.access_token}`}});
+    if(!r.ok)throw new Error(`Backend ${r.status}`);
+    profileData=await r.json();
+    renderProfile();
+  }catch(e){
+    console.error(e);
+  }
+
+  try{
+    const r2=await fetch(`${BACKEND_URL}/api/transacciones`,{headers:{Authorization:`Bearer ${session.access_token}`}});
+    if(!r2.ok)throw new Error(`Backend ${r2.status}`);
+    profileTxs=await r2.json();
+    renderProfileTx();
+  }catch(e){
+    console.error(e);
+    document.getElementById('profileTxList').innerHTML='<div class="bets-empty">No se pudo cargar el historial.</div>';
+  }
+}
+function closeProfile(){document.getElementById('profileModal').style.display='none';}
+
+function renderProfile(){
+  if(!profileData)return;
+  const nombre=profileData.nombre_usuario||profileData.email.split('@')[0];
+  document.getElementById('profileAvatar').textContent=nombre.charAt(0).toUpperCase();
+  document.getElementById('profileNameDisplay').textContent=nombre;
+  document.getElementById('profileNameInput').value=nombre;
+  document.getElementById('profileEmail').textContent=profileData.email;
+  document.getElementById('profileMemberSince').textContent=`Miembro desde ${new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(profileData.fecha_registro))}`;
+  document.getElementById('profileSaldo').textContent=fmtMoney(profileData.saldo);
+  document.getElementById('profileEstado').textContent=profileData.estado||'activo';
+  document.getElementById('profileAdminBadge').style.display=profileData.rol==='admin'?'inline-block':'none';
+}
+
+function renderProfileTx(){
+  const el=document.getElementById('profileTxList');
+  if(!profileTxs.length){el.innerHTML='<div class="bets-empty">Todavía no tienes movimientos.</div>';return;}
+  const tipoLabel={deposito:'Depósito',retiro:'Retiro',apuesta_realizada:'Apuesta realizada',pago_ganancia:'Pago de ganancia',bono:'Bono',ajuste:'Ajuste'};
+  el.innerHTML=profileTxs.map(tx=>{
+    const monto=Number(tx.monto);
+    const fecha=new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(tx.creado_en));
+    return `<div class="tx-item">
+      <div><div class="tx-tipo">${tipoLabel[tx.tipo]||tx.tipo}</div><div class="tx-fecha">${fecha}</div></div>
+      <div class="tx-monto ${monto>=0?'pos':'neg'}">${monto>=0?'+':''}${fmtMoney(monto)}</div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('balancePill').onclick=openProfile;
+document.getElementById('profileClose').onclick=closeProfile;
+
+document.getElementById('profileEditNameBtn').onclick=()=>{
+  document.getElementById('profileNameEditRow').style.display='flex';
+  document.getElementById('profileNameDisplay').style.display='none';
+  document.getElementById('profileEditNameBtn').style.display='none';
+};
+document.getElementById('profileCancelNameBtn').onclick=()=>{
+  document.getElementById('profileNameEditRow').style.display='none';
+  document.getElementById('profileNameDisplay').style.display='inline';
+  document.getElementById('profileEditNameBtn').style.display='inline-block';
+};
+document.getElementById('profileSaveNameBtn').onclick=async()=>{
+  const nuevo=document.getElementById('profileNameInput').value.trim();
+  if(!nuevo)return;
+  try{
+    const r=await fetch(`${BACKEND_URL}/api/usuarios/me`,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
+      body:JSON.stringify({nombreUsuario:nuevo})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||'Error');
+    profileData=data;
+    renderProfile();
+    document.getElementById('profileNameEditRow').style.display='none';
+    document.getElementById('profileNameDisplay').style.display='inline';
+    document.getElementById('profileEditNameBtn').style.display='inline-block';
+  }catch(e){
+    alert(e.message);
+  }
+};
+
+document.getElementById('profileChangePasswordBtn').onclick=async()=>{
+  const nueva=document.getElementById('profileNewPassword').value;
+  const msgEl=document.getElementById('profilePasswordMsg');
+  if(!nueva||nueva.length<6){msgEl.textContent='La contraseña debe tener al menos 6 caracteres.';msgEl.style.color='var(--accent-red)';return;}
+  try{
+    const{error}=await sb.auth.updateUser({password:nueva});
+    if(error)throw error;
+    msgEl.textContent='Contraseña actualizada correctamente.';
+    msgEl.style.color='var(--accent-green)';
+    document.getElementById('profileNewPassword').value='';
+  }catch(e){
+    msgEl.textContent=e.message;
+    msgEl.style.color='var(--accent-red)';
+  }
+};
 
 // =========================================================
 // MIS APUESTAS (historial)
