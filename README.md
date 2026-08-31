@@ -1,19 +1,12 @@
 # WAGERLINE
-
-Proyecto de casa de apuestas deportivas.
-
-## Integrantes del equipo
-
-- [Nombre Apellido]
-- [Nombre Apellido]
-- [Nombre Apellido]
-
-## Descripción
-
-Backend desarrollado con Express y Supabase, desplegado en Vercel.
-
+Casa de apuestas deportivas y casino — proyecto de desarrollo.
+## Integrantes
+HERNAN SANTIAGO ALVARINO = HSAR
+JOSÉ AGUSTÍN BARRANCO MUÑOZ = Jose
+JEAM PAUL SERNA SALGADO = Jeampul
 ## Tecnologías
-
-- Node.js / Express
-- Supabase
-- Vercel
+- Backend: Node.js + Express
+- Base de datos: Supabase (PostgreSQL)
+- Frontend: HTML/CSS/JS vanilla
+- Hosting: Vercel
+- Datos deportivos: The Odds API
