@@ -11,3 +11,4 @@ Base de datos: Supabase (PostgreSQL)
 Frontend: HTML/CSS/JS vanilla
 Hosting: Vercel
 Datos deportivos: The Odds API
+APLICAR CAMBIOS AL README
