@@ -64,26 +64,6 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .modal-wide-body{overflow-y:auto;margin:0 -26px;padding:0 26px}
 .bets-empty{padding:36px 10px;text-align:center;color:var(--text-low);font-size:13px}
 .bet-history-item{background:var(--bg-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px}
-.profile-header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-.profile-avatar{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,var(--accent-green),var(--accent-violet));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#04140d;flex-shrink:0}
-.profile-name-row{display:flex;align-items:center;gap:8px}
-.profile-name-row input{background:var(--bg-1);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text-hi);font-size:14px;font-weight:700;width:150px}
-.profile-badge{font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;background:rgba(139,108,255,.14);color:var(--accent-violet)}
-.profile-meta{font-size:11px;color:var(--text-low);margin-top:2px}
-.profile-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-.profile-stat{background:var(--bg-2);border:1px solid var(--border);border-radius:10px;padding:12px}
-.profile-stat-label{font-size:10px;color:var(--text-low);text-transform:uppercase;letter-spacing:.5px}
-.profile-stat-value{font-family:'JetBrains Mono';font-size:18px;font-weight:700;margin-top:2px}
-.profile-section-title{font-size:12px;font-weight:700;color:var(--text-mid);margin:16px 0 8px;text-transform:uppercase;letter-spacing:.5px}
-.tx-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:12px}
-.tx-item:last-child{border-bottom:none}
-.tx-tipo{color:var(--text-hi);font-weight:600}
-.tx-fecha{font-size:10px;color:var(--text-low)}
-.tx-monto{font-family:'JetBrains Mono';font-weight:700}
-.tx-monto.pos{color:var(--accent-green)}
-.tx-monto.neg{color:var(--accent-red)}
-.profile-password-row{display:flex;gap:8px;margin-top:6px}
-.profile-password-row input{flex:1;background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text-hi)}
 .bhi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
 .bhi-match{font-size:13px;font-weight:600}
 .bhi-date{font-size:11px;color:var(--text-low);margin-top:3px}
@@ -145,39 +125,6 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 .bj-btn-bet{background:var(--accent-violet);color:#fff}
 .bj-status-line{text-align:center;font-size:12px;color:var(--text-mid);margin-top:10px}
 .bj-timer{font-family:'JetBrains Mono';color:var(--accent-green);font-weight:700}
-
-/* ===== RULETA ===== */
-.rl-demo-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(139,108,255,.14);color:var(--accent-violet);font-size:10px;font-weight:800;letter-spacing:.4px;padding:4px 10px;border-radius:20px;text-transform:uppercase;margin-bottom:12px}
-.rl-wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
-.rl-wheel-wrap{position:relative;width:240px;height:240px;flex-shrink:0}
-.rl-pointer{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:16px solid var(--accent-green);z-index:5;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
-.rl-wheel-outer{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 50% 50%,#2A3346,#0A0D12 78%);border:6px solid #2A3346;box-shadow:inset 0 0 20px rgba(0,0,0,.6),0 10px 30px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;position:relative}
-.rl-wheel{width:88%;height:88%;border-radius:50%;position:relative;transform:rotate(0deg);will-change:transform}
-.rl-wheel-num{position:absolute;top:50%;left:50%;width:20px;height:50%;margin-left:-10px;transform-origin:50% 0%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:6px;font-family:'JetBrains Mono';font-size:9px;font-weight:700;color:#fff;pointer-events:none}
-.rl-hub{position:absolute;width:26%;height:26%;border-radius:50%;background:radial-gradient(circle,#3a4560,#171E2C);border:2px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:3}
-.rl-wheel.spinning{transition:transform 4.4s cubic-bezier(.13,.72,.1,1)}
-.rl-status{font-size:13px;font-weight:700;min-height:20px;text-align:center}
-.rl-status.win{color:var(--accent-green)}.rl-status.lose{color:var(--text-mid)}
-.rl-winnum{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;font-family:'JetBrains Mono';font-size:12px;font-weight:800;color:#fff;margin:0 4px}
-.rl-controls-row{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
-.rl-chip{width:38px;height:38px;border-radius:50%;border:2px solid var(--border);background:var(--bg-2);color:var(--text-hi);font-family:'JetBrains Mono';font-size:10px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.rl-chip.active{border-color:var(--accent-green);background:rgba(44,230,143,.14);color:var(--accent-green);transform:scale(1.08)}
-.rl-table{width:100%;max-width:460px;user-select:none}
-.rl-table-grid{display:grid;grid-template-columns:34px repeat(12,1fr);gap:3px}
-.rl-cell{position:relative;background:#0d2818;border:1px solid var(--border);border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono';font-size:11px;font-weight:700;color:#fff;cursor:pointer;min-height:30px}
-.rl-cell.red{background:#7a1728}.rl-cell.black{background:#1a1f2b}.rl-cell.green{background:#0d5c37;grid-row:1/4;grid-column:1;min-height:100%}
-.rl-cell:hover{outline:1px solid var(--accent-green)}
-.rl-outside-row{display:grid;grid-template-columns:34px repeat(3,1fr) 1fr 1fr 1fr 1fr 1fr 1fr;gap:3px;margin-top:4px}
-.rl-outside{background:var(--bg-2);border:1px solid var(--border);border-radius:5px;text-align:center;font-size:11px;font-weight:700;padding:8px 2px;cursor:pointer;color:var(--text-hi)}
-.rl-outside.dz{grid-column:span 1}
-.rl-chip-stack{position:absolute;bottom:-6px;right:-6px;background:var(--accent-violet);color:#fff;border-radius:9px;font-size:9px;font-weight:800;padding:1px 5px;font-family:'JetBrains Mono';box-shadow:0 0 0 2px var(--surface)}
-.rl-bottom-row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:6px}
-.rl-total{font-size:12px;color:var(--text-mid)}.rl-total b{color:var(--accent-green);font-family:'JetBrains Mono'}
-.rl-auto-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-mid)}
-.rl-switch{position:relative;width:38px;height:22px;background:var(--bg-2);border:1px solid var(--border);border-radius:20px;cursor:pointer;flex-shrink:0}
-.rl-switch::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text-mid);transition:.2s}
-.rl-switch.on{background:rgba(44,230,143,.25);border-color:var(--accent-green)}
-.rl-switch.on::after{transform:translateX(16px);background:var(--accent-green)}
 @media(max-width:880px){.hero-grid{grid-template-columns:1fr}.nav-links{display:none}.match-row{grid-template-columns:1fr}.bet-slip{right:10px;left:10px;width:auto;bottom:10px}.bj-seats{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
@@ -191,7 +138,7 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
     <a href="#" class="active">En Vivo</a><a href="#">Deportes</a><a href="#" id="casinoLink">Casino</a><a href="#">Promociones</a><a href="#" id="misApuestasLink">Mis Apuestas</a>
   </div>
   <div class="nav-actions">
-    <div class="balance-pill" id="balancePill" style="display:none;cursor:pointer" title="Ver mi perfil">💰 <span class="mono" id="balanceAmount">$0.00</span></div>
+    <div class="balance-pill" id="balancePill" style="display:none">💰 <span class="mono" id="balanceAmount">$0.00</span></div>
     <button class="btn btn-ghost" id="loginBtn">Iniciar sesión</button>
     <button class="btn btn-primary" id="signupBtn">Registrarse</button>
     <button class="btn btn-ghost" id="logoutBtn" style="display:none">Cerrar sesión</button>
@@ -278,11 +225,11 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
 <div id="casinoModal" class="modal-overlay" style="display:none">
   <div class="modal modal-wide">
     <h3>🎰 Casino</h3>
-    <p class="sub">Proyecto académico — se juega con fichas de práctica, sin dinero real.</p>
+    <p class="sub">Tragamonedas — juega con tu saldo real.</p>
     <div class="casino-tabs" id="casinoTabs">
       <div class="sport-tab active" data-game="slot">Tragamonedas</div>
       <div class="sport-tab" data-game="blackjack">Blackjack</div>
-      <div class="sport-tab" data-game="ruleta">Ruleta</div>
+      <div class="sport-tab disabled" title="Próximamente">Ruleta</div>
     </div>
     <div id="slotGamePanel">
     <div class="slot-machine">
@@ -323,76 +270,7 @@ footer{border-top:1px solid var(--border);padding:26px 32px;text-align:center;co
         <button class="bj-btn-stand" id="bjStandBtn">PLANTARSE</button>
       </div>
     </div>
-    <div id="rouletteGamePanel" style="display:none">
-      <div class="rl-demo-badge">🎓 Modo demo — fichas de práctica</div>
-      <div class="rl-wrap">
-        <div class="rl-wheel-wrap">
-          <div class="rl-pointer"></div>
-          <div class="rl-wheel-outer">
-            <div class="rl-wheel" id="rlWheel"></div>
-            <div class="rl-hub"></div>
-          </div>
-        </div>
-        <div class="rl-status" id="rlStatus">Elige tus fichas y coloca tu apuesta en la mesa.</div>
-        <div class="rl-controls-row" id="rlChipRow"></div>
-        <div class="rl-table">
-          <div class="rl-table-grid" id="rlNumberGrid"></div>
-          <div class="rl-outside-row" id="rlOutsideRow"></div>
-        </div>
-        <div class="rl-bottom-row">
-          <div class="rl-total">Total apostado: <b id="rlTotalBet">$0.00</b></div>
-          <button class="btn btn-ghost" id="rlClearBtn" style="padding:8px 14px;font-size:12px">Borrar apuestas</button>
-          <button class="btn btn-ghost" id="rlRepeatBtn" style="padding:8px 14px;font-size:12px">Repetir última</button>
-        </div>
-        <div class="rl-bottom-row">
-          <button class="btn btn-primary" id="rlSpinBtn" style="width:auto;padding:12px 28px">GIRAR</button>
-          <div class="rl-auto-row">
-            <span>Giros automáticos</span>
-            <div class="rl-switch" id="rlAutoSwitch"></div>
-          </div>
-        </div>
-      </div>
-    </div>
     <div class="modal-actions"><button class="btn btn-ghost" id="casinoClose" style="flex:1">Cerrar</button></div>
-  </div>
-</div>
-
-<div id="profileModal" class="modal-overlay" style="display:none">
-  <div class="modal modal-wide">
-    <div class="profile-header">
-      <div class="profile-avatar" id="profileAvatar">?</div>
-      <div>
-        <div class="profile-name-row">
-          <span id="profileNameDisplay" style="font-weight:700;font-size:16px"></span>
-          <button class="btn btn-ghost" id="profileEditNameBtn" style="padding:4px 10px;font-size:11px">Editar</button>
-          <span class="profile-badge" id="profileAdminBadge" style="display:none">ADMIN</span>
-        </div>
-        <div class="profile-name-row" id="profileNameEditRow" style="display:none;margin-top:6px">
-          <input type="text" id="profileNameInput" maxlength="40">
-          <button class="btn btn-primary" id="profileSaveNameBtn" style="padding:6px 12px;font-size:11px;width:auto">Guardar</button>
-          <button class="btn btn-ghost" id="profileCancelNameBtn" style="padding:6px 12px;font-size:11px;width:auto">Cancelar</button>
-        </div>
-        <div class="profile-meta" id="profileEmail"></div>
-        <div class="profile-meta" id="profileMemberSince"></div>
-      </div>
-    </div>
-
-    <div class="profile-stats">
-      <div class="profile-stat"><div class="profile-stat-label">Saldo actual</div><div class="profile-stat-value" id="profileSaldo">-</div></div>
-      <div class="profile-stat"><div class="profile-stat-label">Estado de cuenta</div><div class="profile-stat-value" id="profileEstado" style="font-size:14px">-</div></div>
-    </div>
-
-    <div class="profile-section-title">Cambiar contraseña</div>
-    <div class="profile-password-row">
-      <input type="password" id="profileNewPassword" placeholder="Nueva contraseña (mín. 6 caracteres)">
-      <button class="btn btn-primary" id="profileChangePasswordBtn" style="width:auto;padding:10px 18px">Cambiar</button>
-    </div>
-    <div class="profile-meta" id="profilePasswordMsg" style="margin-top:6px"></div>
-
-    <div class="profile-section-title">Historial de transacciones</div>
-    <div class="modal-wide-body" id="profileTxList" style="max-height:220px"><div class="bets-empty">Cargando...</div></div>
-
-    <div class="modal-actions"><button class="btn btn-ghost" id="profileClose" style="flex:1">Cerrar</button></div>
   </div>
 </div>
 
@@ -670,116 +548,6 @@ async function refreshSaldo(){
 }
 
 // =========================================================
-// PERFIL DE USUARIO
-// =========================================================
-let profileData=null,profileTxs=[];
-
-async function openProfile(){
-  if(!session){document.getElementById('loginModal')?.style&&openAuth('login');return;}
-  document.getElementById('profileModal').style.display='flex';
-  document.getElementById('profileNameEditRow').style.display='none';
-  document.getElementById('profileNameDisplay').style.display='inline';
-  document.getElementById('profileTxList').innerHTML='<div class="bets-empty">Cargando...</div>';
-
-  try{
-    const r=await fetch(`${BACKEND_URL}/api/usuarios/me`,{headers:{Authorization:`Bearer ${session.access_token}`}});
-    if(!r.ok)throw new Error(`Backend ${r.status}`);
-    profileData=await r.json();
-    renderProfile();
-  }catch(e){
-    console.error(e);
-  }
-
-  try{
-    const r2=await fetch(`${BACKEND_URL}/api/transacciones`,{headers:{Authorization:`Bearer ${session.access_token}`}});
-    if(!r2.ok)throw new Error(`Backend ${r2.status}`);
-    profileTxs=await r2.json();
-    renderProfileTx();
-  }catch(e){
-    console.error(e);
-    document.getElementById('profileTxList').innerHTML='<div class="bets-empty">No se pudo cargar el historial.</div>';
-  }
-}
-function closeProfile(){document.getElementById('profileModal').style.display='none';}
-
-function renderProfile(){
-  if(!profileData)return;
-  const nombre=profileData.nombre_usuario||profileData.email.split('@')[0];
-  document.getElementById('profileAvatar').textContent=nombre.charAt(0).toUpperCase();
-  document.getElementById('profileNameDisplay').textContent=nombre;
-  document.getElementById('profileNameInput').value=nombre;
-  document.getElementById('profileEmail').textContent=profileData.email;
-  document.getElementById('profileMemberSince').textContent=`Miembro desde ${new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'long',year:'numeric'}).format(new Date(profileData.fecha_registro))}`;
-  document.getElementById('profileSaldo').textContent=fmtMoney(profileData.saldo);
-  document.getElementById('profileEstado').textContent=profileData.estado||'activo';
-  document.getElementById('profileAdminBadge').style.display=profileData.rol==='admin'?'inline-block':'none';
-}
-
-function renderProfileTx(){
-  const el=document.getElementById('profileTxList');
-  if(!profileTxs.length){el.innerHTML='<div class="bets-empty">Todavía no tienes movimientos.</div>';return;}
-  const tipoLabel={deposito:'Depósito',retiro:'Retiro',apuesta_realizada:'Apuesta realizada',pago_ganancia:'Pago de ganancia',bono:'Bono',ajuste:'Ajuste'};
-  el.innerHTML=profileTxs.map(tx=>{
-    const monto=Number(tx.monto);
-    const fecha=new Intl.DateTimeFormat('es-CO',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(tx.creado_en));
-    return `<div class="tx-item">
-      <div><div class="tx-tipo">${tipoLabel[tx.tipo]||tx.tipo}</div><div class="tx-fecha">${fecha}</div></div>
-      <div class="tx-monto ${monto>=0?'pos':'neg'}">${monto>=0?'+':''}${fmtMoney(monto)}</div>
-    </div>`;
-  }).join('');
-}
-
-document.getElementById('balancePill').onclick=openProfile;
-document.getElementById('profileClose').onclick=closeProfile;
-
-document.getElementById('profileEditNameBtn').onclick=()=>{
-  document.getElementById('profileNameEditRow').style.display='flex';
-  document.getElementById('profileNameDisplay').style.display='none';
-  document.getElementById('profileEditNameBtn').style.display='none';
-};
-document.getElementById('profileCancelNameBtn').onclick=()=>{
-  document.getElementById('profileNameEditRow').style.display='none';
-  document.getElementById('profileNameDisplay').style.display='inline';
-  document.getElementById('profileEditNameBtn').style.display='inline-block';
-};
-document.getElementById('profileSaveNameBtn').onclick=async()=>{
-  const nuevo=document.getElementById('profileNameInput').value.trim();
-  if(!nuevo)return;
-  try{
-    const r=await fetch(`${BACKEND_URL}/api/usuarios/me`,{
-      method:'PATCH',
-      headers:{'Content-Type':'application/json',Authorization:`Bearer ${session.access_token}`},
-      body:JSON.stringify({nombreUsuario:nuevo})
-    });
-    const data=await r.json();
-    if(!r.ok)throw new Error(data.error||'Error');
-    profileData=data;
-    renderProfile();
-    document.getElementById('profileNameEditRow').style.display='none';
-    document.getElementById('profileNameDisplay').style.display='inline';
-    document.getElementById('profileEditNameBtn').style.display='inline-block';
-  }catch(e){
-    alert(e.message);
-  }
-};
-
-document.getElementById('profileChangePasswordBtn').onclick=async()=>{
-  const nueva=document.getElementById('profileNewPassword').value;
-  const msgEl=document.getElementById('profilePasswordMsg');
-  if(!nueva||nueva.length<6){msgEl.textContent='La contraseña debe tener al menos 6 caracteres.';msgEl.style.color='var(--accent-red)';return;}
-  try{
-    const{error}=await sb.auth.updateUser({password:nueva});
-    if(error)throw error;
-    msgEl.textContent='Contraseña actualizada correctamente.';
-    msgEl.style.color='var(--accent-green)';
-    document.getElementById('profileNewPassword').value='';
-  }catch(e){
-    msgEl.textContent=e.message;
-    msgEl.style.color='var(--accent-red)';
-  }
-};
-
-// =========================================================
 // MIS APUESTAS (historial)
 // =========================================================
 let myBets=[],betsFilterActive='todas';
@@ -920,239 +688,6 @@ async function spinSlot(){
   }
 }
 
-// =========================================================
-// CASINO — RULETA (fichas de práctica, demo académico)
-// =========================================================
-const RL_WHEEL_ORDER=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const RL_RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-const RL_CHIPS=[500,1000,5000,10000,25000];
-const RL_COLOR_HEX={red:'#c92c46',black:'#171b26',green:'#159463'};
-
-let rlInitialized=false,rlCurrentRotation=0,rlSpinning=false,rlAutoOn=false,rlAutoRunning=false;
-let rlBets={},rlSelectedChip=1000,rlLastBets=null;
-
-const rlColor=n=>n===0?'green':(RL_RED.has(n)?'red':'black');
-const rlFmtChip=n=>n>=1000?(n/1000).toLocaleString('es-CO',{maximumFractionDigits:1})+'K':String(n);
-function rlSetStatus(text,cls){const el=document.getElementById('rlStatus');el.innerHTML=text;el.className='rl-status'+(cls?' '+cls:'');}
-
-function initRoulette(){
-  if(rlInitialized)return;
-  rlInitialized=true;
-  buildRlWheel();
-  buildRlChips();
-  buildRlTable();
-  updateRlTotal();
-}
-
-function buildRlWheel(){
-  const wheel=document.getElementById('rlWheel');
-  const step=360/RL_WHEEL_ORDER.length;
-  const parts=RL_WHEEL_ORDER.map((num,i)=>`${RL_COLOR_HEX[rlColor(num)]} ${i*step-step/2}deg ${i*step+step/2}deg`);
-  wheel.style.background=`conic-gradient(${parts.join(',')})`;
-  RL_WHEEL_ORDER.forEach((num,i)=>{
-    const label=document.createElement('div');
-    label.className='rl-wheel-num';
-    label.style.transform=`rotate(${i*step}deg)`;
-    label.textContent=num;
-    wheel.appendChild(label);
-  });
-}
-
-function buildRlChips(){
-  const row=document.getElementById('rlChipRow');
-  row.innerHTML='';
-  RL_CHIPS.forEach(val=>{
-    const b=document.createElement('div');
-    b.className='rl-chip'+(val===rlSelectedChip?' active':'');
-    b.textContent=rlFmtChip(val);
-    b.onclick=()=>{rlSelectedChip=val;row.querySelectorAll('.rl-chip').forEach(c=>c.classList.remove('active'));b.classList.add('active');};
-    row.appendChild(b);
-  });
-}
-
-function buildRlTable(){
-  const grid=document.getElementById('rlNumberGrid');
-  grid.innerHTML='';
-  const zero=document.createElement('div');
-  zero.className='rl-cell green';zero.dataset.key='num-0';zero.textContent='0';
-  grid.appendChild(zero);
-  for(let row=0;row<3;row++){
-    for(let col=0;col<12;col++){
-      const n=col*3+(3-row);
-      const cell=document.createElement('div');
-      cell.className='rl-cell '+rlColor(n);
-      cell.dataset.key='num-'+n;
-      cell.textContent=n;
-      cell.style.gridColumn=col+2;
-      cell.style.gridRow=row+1;
-      grid.appendChild(cell);
-    }
-  }
-  grid.querySelectorAll('.rl-cell').forEach(c=>{
-    c.addEventListener('click',()=>rlPlaceBet(c.dataset.key,c));
-    c.addEventListener('contextmenu',e=>{e.preventDefault();rlRemoveBet(c.dataset.key,c);});
-  });
-
-  const outside=document.getElementById('rlOutsideRow');
-  outside.innerHTML='';
-  outside.appendChild(document.createElement('div')); // celda vacía alineada bajo el "0"
-  const items=[
-    {key:'dozen1',label:'1ra 12'},{key:'dozen2',label:'2da 12'},{key:'dozen3',label:'3ra 12'},
-    {key:'low',label:'1-18'},{key:'even',label:'PAR'},{key:'red',label:'ROJO'},
-    {key:'black',label:'NEGRO'},{key:'odd',label:'IMPAR'},{key:'high',label:'19-36'}
-  ];
-  items.forEach(it=>{
-    const el=document.createElement('div');
-    el.className='rl-outside';el.dataset.key=it.key;el.textContent=it.label;
-    if(it.key==='red')el.style.background=RL_COLOR_HEX.red;
-    if(it.key==='black')el.style.background=RL_COLOR_HEX.black;
-    el.addEventListener('click',()=>rlPlaceBet(it.key,el));
-    el.addEventListener('contextmenu',e=>{e.preventDefault();rlRemoveBet(it.key,el);});
-    outside.appendChild(el);
-  });
-}
-
-function rlPlaceBet(key,el){
-  if(rlSpinning)return;
-  if(!session){rlSetStatus('Inicia sesión para jugar.','');return;}
-  rlBets[key]=(rlBets[key]||0)+rlSelectedChip;
-  rlRenderStack(key,el);
-  updateRlTotal();
-}
-function rlRemoveBet(key,el){
-  if(rlSpinning)return;
-  delete rlBets[key];
-  const s=el.querySelector('.rl-chip-stack');if(s)s.remove();
-  updateRlTotal();
-}
-function rlRenderStack(key,el){
-  let s=el.querySelector('.rl-chip-stack');
-  if(!s){s=document.createElement('div');s.className='rl-chip-stack';el.appendChild(s);}
-  s.textContent=rlFmtChip(rlBets[key]);
-}
-function updateRlTotal(){
-  const total=Object.values(rlBets).reduce((a,b)=>a+b,0);
-  document.getElementById('rlTotalBet').textContent=fmtMoney(total);
-}
-
-function rlFindCellEl(key){
-  return document.querySelector(`#rlNumberGrid [data-key="${key}"]`)||document.querySelector(`#rlOutsideRow [data-key="${key}"]`);
-}
-
-// Anima la rueda hasta que el número ganador quede bajo el puntero.
-// Gira siempre hacia adelante (nunca "rebobina") para que el movimiento
-// se sienta continuo y fluido entre giros.
-function rlSpinToNumber(winNum){
-  const wheel=document.getElementById('rlWheel');
-  const step=360/RL_WHEEL_ORDER.length;
-  const idx=RL_WHEEL_ORDER.indexOf(winNum);
-  const jitter=(Math.random()-0.5)*step*0.5;
-  let targetMod=(-(idx*step+jitter))%360; if(targetMod<0)targetMod+=360;
-  const extraTurns=7+Math.floor(Math.random()*2);
-  const base=rlCurrentRotation-(rlCurrentRotation%360);
-  let newRotation=base+extraTurns*360+targetMod;
-  if(newRotation<=rlCurrentRotation)newRotation+=360;
-  rlCurrentRotation=newRotation;
-  wheel.classList.add('spinning');
-  wheel.style.transform=`rotate(${newRotation}deg)`;
-  return new Promise(res=>{
-    const onEnd=()=>{wheel.removeEventListener('transitionend',onEnd);wheel.classList.remove('spinning');res();};
-    wheel.addEventListener('transitionend',onEnd);
-  });
-}
-
-async function rlSpinOnce(){
-  if(!session){rlSetStatus('Inicia sesión para jugar.','');return false;}
-  const total=Object.values(rlBets).reduce((a,b)=>a+b,0);
-  if(total<=0){rlSetStatus('Coloca al menos una apuesta en la mesa.','');return false;}
-  if(total>saldo){rlSetStatus('Fichas de práctica insuficientes para esta apuesta.','lose');return false;}
-
-  rlSpinning=true;
-  document.getElementById('rlSpinBtn').disabled=true;
-  document.getElementById('rlClearBtn').disabled=true;
-  document.getElementById('rlRepeatBtn').disabled=true;
-  document.querySelectorAll('#rlNumberGrid .rl-cell,#rlOutsideRow .rl-outside').forEach(c=>c.style.pointerEvents='none');
-  rlSetStatus('Girando…','');
-
-  const apuestas=Object.entries(rlBets).map(([key,monto])=>
-    key.startsWith('num-')?{tipo:'num',valor:Number(key.slice(4)),monto}:{tipo:key,monto}
-  );
-  rlLastBets={...rlBets};
-
-  try{
-    const {data,error}=await sb.rpc('ruleta_spin',{p_apuestas:apuestas});
-    if(error)throw new Error(error.message||'No se pudo procesar el giro.');
-
-    await rlSpinToNumber(data.numero_ganador);
-
-    saldo=Number(data.saldo_nuevo)||0;
-    document.getElementById('balanceAmount').textContent=fmtMoney(saldo);
-
-    const col=rlColor(data.numero_ganador);
-    const numHtml=`<span class="rl-winnum" style="background:${RL_COLOR_HEX[col]}">${data.numero_ganador}</span>`;
-    if(data.ganancia_total>0){
-      rlSetStatus(`Salió ${numHtml} — ¡Ganaste ${fmtMoney(data.ganancia_total)}!`,'win');
-    }else{
-      rlSetStatus(`Salió ${numHtml} — Sin premio esta vez.`,'lose');
-    }
-    return true;
-  }catch(e){
-    rlSetStatus(e.message||'No se pudo procesar el giro.','');
-    return false;
-  }finally{
-    rlSpinning=false;
-    document.getElementById('rlClearBtn').disabled=false;
-    document.getElementById('rlRepeatBtn').disabled=false;
-    document.querySelectorAll('#rlNumberGrid .rl-cell,#rlOutsideRow .rl-outside').forEach(c=>c.style.pointerEvents='');
-    document.getElementById('rlSpinBtn').disabled=false;
-  }
-}
-
-// Bucle de giros automáticos: se puede detener manualmente en cualquier
-// momento (entre giro y giro) pulsando el mismo botón, que pasa a decir "DETENER".
-async function rlHandleSpinClick(){
-  if(rlAutoRunning){
-    rlAutoRunning=false; // el usuario detiene la secuencia; el giro en curso termina normalmente
-    rlSetStatus('Deteniendo giros automáticos…','');
-    return;
-  }
-  if(rlAutoOn){
-    rlAutoRunning=true;
-    document.getElementById('rlSpinBtn').textContent='DETENER';
-    document.getElementById('rlAutoSwitch').style.pointerEvents='none';
-    while(rlAutoRunning){
-      const ok=await rlSpinOnce();
-      if(!ok||!rlAutoRunning)break;
-      await new Promise(res=>setTimeout(res,900)); // pausa breve para que el ritmo se sienta natural
-    }
-    rlAutoRunning=false;
-    document.getElementById('rlSpinBtn').textContent='GIRAR (AUTO)';
-    document.getElementById('rlAutoSwitch').style.pointerEvents='';
-  }else{
-    await rlSpinOnce();
-  }
-}
-
-document.getElementById('rlSpinBtn').onclick=rlHandleSpinClick;
-document.getElementById('rlClearBtn').onclick=()=>{
-  if(rlSpinning)return;
-  rlBets={};
-  document.querySelectorAll('#rlNumberGrid .rl-chip-stack,#rlOutsideRow .rl-chip-stack').forEach(s=>s.remove());
-  updateRlTotal();
-};
-document.getElementById('rlRepeatBtn').onclick=()=>{
-  if(rlSpinning||!rlLastBets)return;
-  rlBets={...rlLastBets};
-  Object.keys(rlBets).forEach(key=>{const el=rlFindCellEl(key);if(el)rlRenderStack(key,el);});
-  updateRlTotal();
-};
-document.getElementById('rlAutoSwitch').onclick=()=>{
-  if(rlAutoRunning)return;
-  rlAutoOn=!rlAutoOn;
-  document.getElementById('rlAutoSwitch').classList.toggle('on',rlAutoOn);
-  document.getElementById('rlSpinBtn').textContent=rlAutoOn?'GIRAR (AUTO)':'GIRAR';
-};
-
 document.getElementById('casinoLink').onclick=(e)=>{e.preventDefault();openCasino();};
 document.getElementById('casinoClose').onclick=closeCasino;
 document.getElementById('slotSpinBtn').onclick=spinSlot;
@@ -1165,9 +700,7 @@ document.getElementById('casinoTabs').onclick=(e)=>{
   const game=tab.dataset.game;
   document.getElementById('slotGamePanel').style.display=game==='slot'?'block':'none';
   document.getElementById('blackjackGamePanel').style.display=game==='blackjack'?'block':'none';
-  document.getElementById('rouletteGamePanel').style.display=game==='ruleta'?'block':'none';
   if(game==='blackjack'){initBlackjack();fetchBjMesa();}
-  if(game==='ruleta'){initRoulette();}
 };
 
 // =========================================================
