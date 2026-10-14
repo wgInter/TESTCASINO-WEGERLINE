@@ -28,5 +28,6 @@ Casa de apuestas deportivas y casino — proyecto de desarrollo.
 |---|---|---|---|
 | Hernán Santiago Alvarino | http://cuc-bp-alvarino-sitio-2026.s3-website-us-east-1.amazonaws.com/ | cuc-bp-alvarino-sitio-2026 | cuc-bp-alvarino-privado-2026 |
 | José Agustín Barranco Muñoz | http://cuc-bp-barranco-sitio-2026.s3-website-us-east-1.amazonaws.com/ | cuc-bp-barranco-sitio-2026 | cuc-bp-barranco-privado-2026 |
+| Jeam Paul Serna Salgado | http://cuc.bp-serna-sitio-2026.s3-website-us-east-1.amazonaws.com/ | cuc.bp-serna-sitio-2026 | cuc-bp-sernas-privado-2026 |
 
 El front-end del proyecto dejó de publicarse en su plataforma de hosting anterior y pasó a Amazon S3 para empezar a migrar todo a infraestructura real de AWS, por fases. El bucket público aloja el sitio web estático y solo permite leer archivos (`s3:GetObject`), mientras que el bucket privado mantiene activado el bloqueo de acceso público y devuelve 403 (AccessDenied), lo que demuestra que lo que no se concede de forma explícita queda denegado.
