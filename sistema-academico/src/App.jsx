@@ -1,27 +1,6 @@
 import { useState } from 'react';
-
-function Boton({ children, alHacerClic, variante = 'primario', cargando = false }) {
-  return (
-    <button
-      className={`btn btn-${variante}`}
-      onClick={alHacerClic}
-      disabled={cargando}
-    >
-      {cargando ? 'Cargando...' : children}
-    </button>
-  );
-}
-
-function FilaEstudiante({ estudiante }) {
-  const estado = estudiante.nota >= 3.0 ? 'Aprobado' : 'Reprobado';
-  return (
-    <tr>
-      <td>{estudiante.nombre}</td>
-      <td>{estudiante.nota}</td>
-      <td>{estado}</td>
-    </tr>
-  );
-}
+import Boton from './componentes/Boton';
+import FilaEstudiante from './funcionalidades/notas/FilaEstudiante';
 
 function App() {
   const [estudiantes, setEstudiantes] = useState([
@@ -30,41 +9,51 @@ function App() {
   const [nombre, setNombre] = useState('');
 
   function agregar() {
-    if (nombre.trim() === '') return;
-    const nuevo = { id: Date.now(), nombre: nombre.trim(), nota: 3.2 };
-    setEstudiantes([...estudiantes, nuevo]); // arreglo nuevo, no push
+    if (!nombre) return;
+    const nuevo = { id: Date.now(), nombre, nota: 3.2 };
+    setEstudiantes([...estudiantes, nuevo]);
     setNombre('');
   }
 
   return (
     <>
       <h1>Notas</h1>
-
-      <input
-        value={nombre}
-        onChange={e => setNombre(e.target.value)}
-        placeholder="Nombre del estudiante"
-      />
-      <Boton alHacerClic={agregar}>Agregar estudiante</Boton>
-
       <table>
         <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Nota</th>
-            <th>Estado</th>
-          </tr>
+          <tr><th>Nombre</th><th>Nota</th><th>Estado</th></tr>
         </thead>
         <tbody>
-          {estudiantes.map(e => (
-            <FilaEstudiante key={e.id} estudiante={e} />
-          ))}
+          {estudiantes.map(e => <FilaEstudiante key={e.id} estudiante={e} />)}
         </tbody>
       </table>
+      <input value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Nombre" />
+      <Boton alHacerClic={agregar}>Agregar estudiante</Boton>
     </>
   );
 }
 
 export default App;
 
-F
+
+// ============================================================
+//  PASO 4 — Rompa el código a propósito, uno por uno,
+//  y devuélvalo antes de seguir con el siguiente.
+// ============================================================
+//
+//  1) Cambie   key={e.id}   por   key={1}
+//     Agregue tres estudiantes y mire la advertencia en la consola (F12).
+//
+//  2) Agregue   className="caja"   al <h1> y luego cámbielo por   class="caja"
+//     React avisa en la consola. Lea el mensaje exacto que da.
+//
+//  3) Escriba   boton   en minúscula (en la función y en los dos usos).
+//     React cree que es una etiqueta de HTML y no la encuentra.
+//
+//  4) Cambie   setEstudiantes([...estudiantes, nuevo]);
+//        por   estudiantes.push(nuevo);
+//     El arreglo cambia pero la pantalla NO se entera. Es el error más común.
+//
+//  5) Cambie   onClick={alHacerClic}   por   onClick={alHacerClic()}
+//     Se ejecuta al cargar la página, no al hacer clic.
+//
+// ============================================================
