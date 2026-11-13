@@ -32,4 +32,30 @@ function esMarcadorValido(valor) {
   return Number.isInteger(valor) && valor >= 0 && valor <= MARCADOR_MAXIMO;
 }
 
-module.exports = { esSportKeyValido, opcionesOddsValidas, diasAtrasValido, esMarcadorValido };
+const PATRON_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const LONGITUD_MAXIMA_IDENTIFICADOR = 64;
+const PATRON_IDENTIFICADOR = /^[A-Za-z0-9_-]+$/;
+
+// Ids de Supabase Auth, cuotas, etc.
+function esUuid(valor) {
+  return typeof valor === 'string' && PATRON_UUID.test(valor);
+}
+
+// Para ids cuyo formato exacto varía (eventos de The Odds API, mesas, apuestas):
+// no se exige un formato concreto, solo que sea texto corto sin caracteres raros.
+function esIdentificadorValido(valor) {
+  return (
+    typeof valor === 'string' &&
+    valor.length <= LONGITUD_MAXIMA_IDENTIFICADOR &&
+    PATRON_IDENTIFICADOR.test(valor)
+  );
+}
+
+module.exports = {
+  esSportKeyValido,
+  opcionesOddsValidas,
+  diasAtrasValido,
+  esMarcadorValido,
+  esUuid,
+  esIdentificadorValido,
+};

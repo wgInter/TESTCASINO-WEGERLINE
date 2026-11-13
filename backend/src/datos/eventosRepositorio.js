@@ -1,13 +1,9 @@
 const { supabaseAdmin } = require('./supabaseClient');
 const { ESTADOS_EVENTO } = require('../config/constantes');
+const { resolver } = require('./consultas');
 
 // Todas las consultas a Supabase de eventos/mercados/cuotas viven aquí.
 // Si algo falla, lanza el error; quien llama decide qué responder.
-async function resolver(consulta) {
-  const { data, error } = await consulta;
-  if (error) throw error;
-  return data;
-}
 
 // Se usa deportes!inner(...) y no deportes(...): con el join normal,
 // .eq('deportes.clave', ...) filtra el objeto anidado pero NO las filas de

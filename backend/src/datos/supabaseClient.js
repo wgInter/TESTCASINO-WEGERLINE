@@ -13,4 +13,17 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-module.exports = { supabaseAdmin };
+// Cliente que actúa COMO el usuario (con su token), con la publishable key.
+// Solo para funciones SQL que identifican al jugador con auth.uid() en vez de
+// recibir su id por parámetro (es el caso de ruleta_spin).
+function clienteDeUsuario(token) {
+  const clavePublica = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!clavePublica) throw new Error('Falta SUPABASE_PUBLISHABLE_KEY en el .env del back');
+
+  return createClient(SUPABASE_URL, clavePublica, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
+
+module.exports = { supabaseAdmin, clienteDeUsuario };

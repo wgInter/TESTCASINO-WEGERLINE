@@ -9,9 +9,9 @@ router.get('/salud', (_req, res) => ok(res, { estado: 'ok' }));
 // Cada integrante monta aquí su router cuando lo tenga listo (una línea por router):
 router.use(require('./eventos'));        // Alvarino: /eventos, /sports, /odds, /admin/sync*, /admin/settle*
 router.use('/cron', require('./cron'));  // Alvarino: /cron/*
-//   router.use('/apuestas', require('./apuestas'));    // José
-//   router.use('/usuarios', require('./usuarios'));    // José
-//   router.use('/casino', require('./casino'));        // José
-//   router.use('/blackjack', require('./blackjack'));  // José
+router.use(require('./apuestas'));   // José: /apuestas, /apuestas/cotizar, /eventos/apostadores, /admin/apuestas/*
+router.use(require('./usuarios'));   // José: /usuarios/me, /transacciones, /admin/saldo/ajustar
+router.use(require('./casino'));     // José: /casino/slot/spin, /casino/ruleta/spin
+router.use(require('./blackjack'));  // José: /blackjack/*
 
 module.exports = router;
