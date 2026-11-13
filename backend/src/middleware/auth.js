@@ -20,6 +20,7 @@ async function requireAuth(req, res, siguiente) {
   }
 
   req.user = data.user; // { id, email, ... }
+  req.token = token; // lo usan las rutas que llaman a Supabase como el usuario
   siguiente();
 }
 
