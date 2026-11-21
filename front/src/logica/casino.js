@@ -2,6 +2,11 @@
 // El resultado real de cada juego lo decide SIEMPRE el servidor; aquí solo hay
 // presentación (colores, formato, animación) y validaciones previas.
 import { formatearDinero } from './formato';
+import {
+  AZAR_CENTRO, BLACKJACK_OBJETIVO, COLUMNAS_TABLERO, DESVIO_MAXIMO_CASILLAS, FILAS_TABLERO,
+  GRADOS_VUELTA, MS_POR_SEGUNDO, VALOR_AS_ALTO, VALOR_AS_BAJO, VALOR_FIGURA,
+  UMBRAL_MILES, VUELTAS_EXTRA_RULETA, VUELTAS_MINIMAS_RULETA,
+} from '../constantes';
 
 // ---------- Tragamonedas ----------
 export const SIMBOLOS_SLOT = ['🍒', '🔔', '⭐', '💎', '7️⃣'];
@@ -32,7 +37,7 @@ export const RULETA_FICHAS = [500, 1000, 5000, 10000, 25000];
 export const RULETA_COLOR_HEX = { red: '#c92c46', black: '#171b26', green: '#159463' };
 export const FICHA_INICIAL = 1000;
 export const DURACION_GIRO_MS = 4400; // igual que la transición CSS de .rl-wheel.spinning
-export const PASO_RULETA = 360 / RULETA_ORDEN.length;
+export const PASO_RULETA = GRADOS_VUELTA / RULETA_ORDEN.length;
 
 export const APUESTAS_EXTERIORES = [
   { clave: 'dozen1', etiqueta: '1ra 12' }, { clave: 'dozen2', etiqueta: '2da 12' }, { clave: 'dozen3', etiqueta: '3ra 12' },
@@ -43,8 +48,8 @@ export const APUESTAS_EXTERIORES = [
 export const colorRuleta = (numero) => (numero === 0 ? 'green' : RULETA_ROJOS.has(numero) ? 'red' : 'black');
 
 export function formatearFicha(valor) {
-  return valor >= 1000
-    ? (valor / 1000).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + 'K'
+  return valor >= UMBRAL_MILES
+    ? (valor / UMBRAL_MILES).toLocaleString('es-CO', { maximumFractionDigits: 1 }) + 'K'
     : String(valor);
 }
 
@@ -60,9 +65,9 @@ export function armarApuestasRuleta(apuestas) {
 // Los 36 números del paño, con su fila y columna en la cuadrícula (el 0 va aparte).
 export function celdasTablero() {
   const celdas = [];
-  for (let fila = 0; fila < 3; fila++) {
-    for (let columna = 0; columna < 12; columna++) {
-      celdas.push({ numero: columna * 3 + (3 - fila), fila: fila + 1, columna: columna + 2 });
+  for (let fila = 0; fila < FILAS_TABLERO; fila++) {
+    for (let columna = 0; columna < COLUMNAS_TABLERO; columna++) {
+      celdas.push({ numero: columna * FILAS_TABLERO + (FILAS_TABLERO - fila), fila: fila + 1, columna: columna + 2 });
     }
   }
   return celdas;
@@ -79,13 +84,13 @@ export function gradienteRueda() {
 // Los dos "aleatorios" (0-1) entran como parámetro para poder probarla.
 export function calcularRotacionRuleta(actual, numeroGanador, aleatorioA, aleatorioB) {
   const indice = RULETA_ORDEN.indexOf(numeroGanador);
-  const desvio = (aleatorioA - 0.5) * PASO_RULETA * 0.5;
-  let objetivo = (-(indice * PASO_RULETA + desvio)) % 360;
-  if (objetivo < 0) objetivo += 360;
-  const vueltas = 7 + Math.floor(aleatorioB * 2);
-  const base = actual - (actual % 360);
-  let nueva = base + vueltas * 360 + objetivo;
-  if (nueva <= actual) nueva += 360;
+  const desvio = (aleatorioA - AZAR_CENTRO) * PASO_RULETA * DESVIO_MAXIMO_CASILLAS;
+  let objetivo = (-(indice * PASO_RULETA + desvio)) % GRADOS_VUELTA;
+  if (objetivo < 0) objetivo += GRADOS_VUELTA;
+  const vueltas = VUELTAS_MINIMAS_RULETA + Math.floor(aleatorioB * VUELTAS_EXTRA_RULETA);
+  const base = actual - (actual % GRADOS_VUELTA);
+  let nueva = base + vueltas * GRADOS_VUELTA + objetivo;
+  if (nueva <= actual) nueva += GRADOS_VUELTA;
   return nueva;
 }
 
@@ -107,18 +112,18 @@ export function valorManoBlackjack(cartas) {
   let ases = 0;
   for (const carta of cartas) {
     const rango = carta.slice(0, -1);
-    if (rango === 'A') { ases++; total += 11; }
-    else if (['J', 'Q', 'K'].includes(rango)) total += 10;
+    if (rango === 'A') { ases++; total += VALOR_AS_ALTO; }
+    else if (['J', 'Q', 'K'].includes(rango)) total += VALOR_FIGURA;
     else total += Number(rango);
   }
-  while (total > 21 && ases > 0) { total -= 10; ases--; }
+  while (total > BLACKJACK_OBJETIVO && ases > 0) { total -= VALOR_AS_ALTO - VALOR_AS_BAJO; ases--; }
   return total;
 }
 
 export function estadoMesaBlackjack(mesa, ahora) {
   const texto = ESTADOS_MESA_BJ[mesa.estado] ?? mesa.estado;
   const segundos = mesa.estado === 'turnos' && mesa.turno_expira_en
-    ? Math.max(0, Math.round((new Date(mesa.turno_expira_en) - ahora) / 1000))
+    ? Math.max(0, Math.round((new Date(mesa.turno_expira_en) - ahora) / MS_POR_SEGUNDO))
     : null;
   return { texto, segundos };
 }

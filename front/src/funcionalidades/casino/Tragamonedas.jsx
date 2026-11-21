@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { girarTragamonedas } from '../../api';
 import { PAGOS_SLOT, describirResultadoSlot, simbolosAlAzar } from '../../logica/casino';
 import { esperar } from '../../logica/tiempo';
+import { ESPERA_RESULTADO_SLOT_MS, MONTO_INICIAL, VELOCIDAD_ANIMACION_SLOT_MS } from '../../constantes';
 
 export default function Tragamonedas({ token, onActualizarSaldo }) {
   const [simbolos, setSimbolos] = useState(['🍒', '🔔', '⭐']);
-  const [monto, setMonto] = useState('1000');
+  const [monto, setMonto] = useState(String(MONTO_INICIAL));
   const [girando, setGirando] = useState(false);
   const [resultado, setResultado] = useState(null); // { texto, tipo }
   const animacion = useRef(null);
@@ -21,11 +22,11 @@ export default function Tragamonedas({ token, onActualizarSaldo }) {
     setGirando(true);
     setResultado(null);
     // Animación local: cicla símbolos al azar mientras esperamos al servidor.
-    animacion.current = setInterval(() => setSimbolos(simbolosAlAzar()), 90);
+    animacion.current = setInterval(() => setSimbolos(simbolosAlAzar()), VELOCIDAD_ANIMACION_SLOT_MS);
 
     try {
       const datos = await girarTragamonedas(token, valor);
-      await esperar(700);
+      await esperar(ESPERA_RESULTADO_SLOT_MS);
       clearInterval(animacion.current);
       setSimbolos(datos.simbolos);
       setResultado(describirResultadoSlot(datos));

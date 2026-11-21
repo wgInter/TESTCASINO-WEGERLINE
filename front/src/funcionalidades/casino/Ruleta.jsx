@@ -8,6 +8,7 @@ import {
 } from '../../logica/casino';
 import { formatearDinero } from '../../logica/formato';
 import { esperar } from '../../logica/tiempo';
+import { MARGEN_SEGURIDAD_GIRO_MS, PAUSA_GIRO_AUTOMATICO_MS } from '../../constantes';
 
 const GRADIENTE = gradienteRueda();
 const CELDAS = celdasTablero();
@@ -44,7 +45,7 @@ export default function Ruleta({ token, saldo, onActualizarSaldo }) {
   const girarRueda = (numero) => new Promise((resolver) => {
     const nueva = calcularRotacionRuleta(rotacionRef.current, numero, Math.random(), Math.random());
     rotacionRef.current = nueva;
-    const seguro = setTimeout(() => resolverGiro.current?.(), DURACION_GIRO_MS + 600);
+    const seguro = setTimeout(() => resolverGiro.current?.(), DURACION_GIRO_MS + MARGEN_SEGURIDAD_GIRO_MS);
     resolverGiro.current = () => { clearTimeout(seguro); resolverGiro.current = null; setAnimando(false); resolver(); };
     setAnimando(true);
     setRotacion(nueva);
@@ -111,7 +112,7 @@ export default function Ruleta({ token, saldo, onActualizarSaldo }) {
     while (autoCorriendo.current) {
       const ok = await girarUnaVez();
       if (!ok || !autoCorriendo.current || !montado.current) break;
-      await esperar(900); // pausa breve para que el ritmo se sienta natural
+      await esperar(PAUSA_GIRO_AUTOMATICO_MS); // pausa breve para que el ritmo se sienta natural
     }
     autoCorriendo.current = false;
     if (montado.current) setAutoActivo(false);
