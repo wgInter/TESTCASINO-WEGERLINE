@@ -2,9 +2,6 @@
 // La cuota total, la ganancia y el monto mínimo los decide SOLO el back
 // (POST /api/apuestas/cotizar): el front no repite esas reglas.
 
-// Valor inicial del campo "Monto" en el boleto (comodidad de la interfaz, no es una regla).
-export const MONTO_INICIAL = 1000;
-
 export const MERCADO_H2H = 'h2h';
 export const ESTADO_EN_VIVO = 'en_vivo';
 export const NOMBRE_EMPATE = 'Draw';

@@ -4,6 +4,7 @@ import {
   ETIQUETAS_RESULTADO_BJ, colorPalo, estadoMesaBlackjack, valorManoBlackjack,
 } from '../../logica/casino';
 import { formatearDinero } from '../../logica/formato';
+import { MONTO_INICIAL } from '../../constantes';
 
 // Las cartas nuevas se montan con la animación "dealt"; las que ya estaban no se
 // vuelven a animar porque React conserva sus elementos (la key incluye índice y carta).
@@ -52,7 +53,7 @@ function AsientoBlackjack({ asiento, esMio, esTurno, onSentarse }) {
 
 export default function Blackjack({ token, usuarioId, onActualizarSaldo }) {
   const { estado, errorMesa, mensajeAccion, ahora, ejecutar } = useMesaBlackjack(token, onActualizarSaldo);
-  const [monto, setMonto] = useState('1000');
+  const [monto, setMonto] = useState(String(MONTO_INICIAL));
 
   if (!estado) return <div className="bj-status-line">{errorMesa ?? 'Conectando a la mesa...'}</div>;
 

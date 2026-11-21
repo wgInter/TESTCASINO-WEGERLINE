@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../../supabase';
 import { accionBlackjack, obtenerMesaBlackjack, tickBlackjack } from '../../api';
+import { DURACION_MENSAJE_ERROR_MS, INTERVALO_RELOJ_MESA_MS } from '../../constantes';
 
 const INTERVALO_TICK_MS = 2000;
 
@@ -40,7 +41,7 @@ export function useMesaBlackjack(token, onCambio) {
       refrescar();
     }, INTERVALO_TICK_MS);
 
-    const reloj = setInterval(() => setAhora(Date.now()), 1000);
+    const reloj = setInterval(() => setAhora(Date.now()), INTERVALO_RELOJ_MESA_MS);
 
     return () => {
       supabase.removeChannel(canal);
@@ -56,7 +57,7 @@ export function useMesaBlackjack(token, onCambio) {
       setMensajeAccion(null);
     } catch (e) {
       setMensajeAccion(e.message);
-      setTimeout(() => setMensajeAccion(null), 4000);
+      setTimeout(() => setMensajeAccion(null), DURACION_MENSAJE_ERROR_MS);
     }
     refrescar();
     onCambio?.();

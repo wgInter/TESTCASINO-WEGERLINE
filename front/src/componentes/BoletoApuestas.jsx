@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MONTO_INICIAL } from '../logica/cuotas';
+import { MONTO_INICIAL } from '../constantes';
 import { formatearDinero } from '../logica/formato';
 import { useCotizacion } from '../funcionalidades/apuestas/useCotizacion';
 
