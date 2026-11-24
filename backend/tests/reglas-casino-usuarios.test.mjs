@@ -18,6 +18,14 @@ describe('validarApuestasRuleta', () => {
     expect(casino.validarApuestasRuleta([])).not.toBeNull();
     expect(casino.validarApuestasRuleta([{ tipo: 'red', monto: -5 }])).not.toBeNull();
   });
+
+  it('rechaza la misma casilla repetida', () => {
+    const numero = { tipo: 'num', valor: 7, monto: 5 };
+    const externa = { tipo: 'red', monto: 5 };
+    expect(casino.validarApuestasRuleta([numero, numero])).not.toBeNull();
+    expect(casino.validarApuestasRuleta([externa, externa])).not.toBeNull();
+    expect(casino.validarApuestasRuleta([numero, { ...numero, valor: 8 }])).toBeNull();
+  });
 });
 
 describe('blackjack', () => {
@@ -33,6 +41,13 @@ describe('blackjack', () => {
     expect(casino.debeProcesarTick(undefined, 5000, 1000)).toBe(true);
     expect(casino.debeProcesarTick(4500, 5000, 1000)).toBe(false);
     expect(casino.debeProcesarTick(4000, 5000, 1000)).toBe(true);
+  });
+
+  it('registrarTick borra solo la entrada más vieja cuando el mapa se llena', () => {
+    const mapa = new Map();
+    ['a', 'b', 'c'].forEach((id, i) => casino.registrarTick(mapa, id, i, 3));
+    casino.registrarTick(mapa, 'd', 3, 3);
+    expect([...mapa.keys()]).toEqual(['b', 'c', 'd']);
   });
 });
 
