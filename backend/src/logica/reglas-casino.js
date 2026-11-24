@@ -33,6 +33,12 @@ function sumarApuestasRuleta(apuestas) {
   return apuestas.reduce((total, apuesta) => total + apuesta.monto, 0);
 }
 
+// Identifica la casilla de una apuesta: un número concreto ("numero:7") o una
+// apuesta externa ("rojo"). Dos apuestas con la misma clave van a la misma casilla.
+function claveCasilla(apuesta) {
+  return apuesta.tipo === RULETA_TIPO_NUMERO ? `${apuesta.tipo}:${apuesta.valor}` : apuesta.tipo;
+}
+
 function validarApuestasRuleta(apuestas) {
   if (!Array.isArray(apuestas) || apuestas.length === 0) {
     return 'apuestas debe ser un arreglo con al menos una apuesta';
@@ -44,6 +50,12 @@ function validarApuestasRuleta(apuestas) {
   for (const apuesta of apuestas) {
     const error = validarApuestaRuleta(apuesta);
     if (error) return error;
+  }
+
+  // Una apuesta por casilla (ver RULETA_MAXIMO_APUESTAS en constantes.js).
+  const casillas = apuestas.map(claveCasilla);
+  if (new Set(casillas).size !== casillas.length) {
+    return 'no se puede apostar dos veces a la misma casilla';
   }
 
   if (sumarApuestasRuleta(apuestas) > MONTO_MAXIMO) {
@@ -62,9 +74,19 @@ function debeProcesarTick(ultimaVezMs, ahoraMs, minimoMs) {
   return ultimaVezMs === undefined || ahoraMs - ultimaVezMs >= minimoMs;
 }
 
+// Guarda el último tick de una mesa sin dejar crecer el mapa. Si está lleno,
+// borra solo la entrada más vieja (un Map conserva el orden de inserción), no
+// todo el registro: así ids inventados no borran el límite de las mesas reales.
+function registrarTick(mapa, mesaId, ahoraMs, maximo) {
+  mapa.delete(mesaId); // la mesa actual pasa a ser la más reciente
+  if (mapa.size >= maximo) mapa.delete(mapa.keys().next().value);
+  mapa.set(mesaId, ahoraMs);
+}
+
 module.exports = {
   validarApuestasRuleta,
   sumarApuestasRuleta,
   esAsientoValido,
   debeProcesarTick,
+  registrarTick,
 };

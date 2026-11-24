@@ -6,7 +6,7 @@ const blackjack = require('../datos/blackjackRepositorio');
 const { BLACKJACK_TICK_MINIMO_MS, BLACKJACK_TICK_MAXIMO_MESAS } = require('../config/constantes');
 const { esIdentificadorValido } = require('../logica/validaciones');
 const { validarMonto } = require('../logica/reglas-apuestas');
-const { esAsientoValido, debeProcesarTick } = require('../logica/reglas-casino');
+const { esAsientoValido, debeProcesarTick, registrarTick } = require('../logica/reglas-casino');
 
 const router = express.Router();
 
@@ -47,9 +47,9 @@ router.post('/blackjack/tick', manejarAsync(async (req, res) => {
     return ok(res, { ok: true, omitido: true });
   }
 
-  // El mapa no crece sin control aunque alguien mande ids inventados.
-  if (ultimoTickPorMesa.size >= BLACKJACK_TICK_MAXIMO_MESAS) ultimoTickPorMesa.clear();
-  ultimoTickPorMesa.set(mesaId, ahora);
+  // El mapa no crece sin control aunque alguien mande ids inventados: si se
+  // llena, se borra solo la mesa más vieja (no todo el registro).
+  registrarTick(ultimoTickPorMesa, mesaId, ahora, BLACKJACK_TICK_MAXIMO_MESAS);
 
   await blackjack.avanzarReloj(mesaId);
   ok(res, { ok: true });
