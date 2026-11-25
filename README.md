@@ -6,7 +6,7 @@ Casa de apuestas deportivas con casino académico: se juega con fichas de práct
 
 | Integrante | De qué se encargó |
 |---|---|
-| Hernán Santiago Alvarino (HSAR) | Rutas de eventos, sincronización y liquidación (`/eventos`, `/sports`, `/odds`, `/admin/sync*`, `/admin/settle*`, `/cron/*`), despliegue en AWS (S3 y EC2) y revisión de PR. |
+| Hernán Santiago Alvarino (HSAR) | Rutas de eventos, sincronización y liquidación , despliegue en AWS (S3 y EC2) |
 | José Agustín Barranco Muñoz | Back por capas de apuestas, usuarios, casino y blackjack, con validaciones, constantes y pruebas. |
 | Jeam Paul Serna Salgado | Front en React: componentes, páginas de inicio, cuenta y casino, y sus pruebas. |
 
