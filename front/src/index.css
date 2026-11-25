@@ -1,0 +1,16 @@
+:root {
+  --bg-0: #0a0d12; --bg-1: #111621; --bg-2: #171e2c; --surface: #1c2433;
+  --borde: #2a3346; --texto: #f2f5fa; --texto-2: #9aa6bc;
+  --verde: #2ce68f; --rojo: #ff4c6a; --violeta: #8b6cff;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg-0); color: var(--texto); font-family: Inter, system-ui, sans-serif; }
+button { font: inherit; cursor: pointer; }
+
+/* Nombres de variables del index.html original (los usa estilos/legacy.css). */
+:root {
+  --border: #2a3346; --text-hi: #f2f5fa; --text-mid: #9aa6bc; --text-low: #5d6a82;
+  --accent-green: #2ce68f; --accent-red: #ff4c6a; --accent-violet: #8b6cff;
+}
+.mono { font-family: 'JetBrains Mono', monospace; }
