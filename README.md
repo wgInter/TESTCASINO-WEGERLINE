@@ -6,7 +6,7 @@ Casa de apuestas deportivas con casino académico: se juega con fichas de práct
 
 | Integrante | De qué se encargó |
 |---|---|
-| Hernán Santiago Alvarino (HSAR) | Rutas de eventos, sincronización y liquidación (`/eventos`, `/sports`, `/odds`, `/admin/sync*`, `/admin/settle*`, `/cron/*`), despliegue en AWS (S3 y EC2) y revisión de PR. |
+| Hernán Santiago Alvarino (HSAR) | Rutas de eventos, sincronización y liquidación (`/eventos`, `/sports`, `/odds`, `/admin/sync*`, `/admin/settle*`, `/cron/*`), despliegue en AWS (S3 y EC2) |
 | José Agustín Barranco Muñoz | Back por capas de apuestas, usuarios, casino y blackjack, con validaciones, constantes y pruebas. |
 | Jeam Paul Serna Salgado | Front en React: componentes, páginas de inicio, cuenta y casino, y sus pruebas. |
 
@@ -23,9 +23,11 @@ Casa de apuestas deportivas con casino académico: se juega con fichas de práct
 ```
 backend/   API: rutas/ (reciben y responden), logica/ (reglas sin req ni res), datos/ (repositorios hacia Supabase)
 front/     React: componentes/, funcionalidades/, hooks/, logica/ (reglas puras), api.js (único punto de contacto con el back)
-docs/      ADR-001 (diseño del almacenamiento en S3) y guía de despliegue
+docs/      ADR-001 (diseño del almacenamiento en S3), guía de despliegue y script de la instancia
 db/        funciones SQL (ruleta_spin.sql)
 ```
+
+> Las carpetas `api/`, `public/`, `sistema-academico/` y los archivos sueltos de la raíz son del monolito anterior; `backend/` y `front/` los reemplazan.
 
 ## Cómo levantarlo en local
 
@@ -48,7 +50,7 @@ npm install
 npm run dev
 ```
 
-Abrir `http://localhost:5173`. Comprobar el back en `http://localhost:3000/api/salud` (debe responder `{"estado":"ok"}`).
+Abrir `http://localhost:5173`. Comprobar el back en `http://localhost:3000/api/salud` (debe responder `{"estado":"ok"}`). Si cambias un `.env`, detén y vuelve a arrancar el proceso: no se relee solo.
 
 **Variables de entorno del back (`backend/.env`, no se sube a Git):**
 
@@ -109,15 +111,15 @@ Los errores de validación responden con el formato `{ "error": "mensaje claro" 
 ## Cómo correr las pruebas
 
 ```bash
-cd backend && npm test      # 33 pruebas en 3 archivos (reglas de apuestas, casino, usuarios y transformación de cuotas)
-cd front && npm test        # 39 pruebas (boleto, blackjack, ruleta, tragamonedas, cuenta y formato)
+cd backend && npm test      # 33 pruebas en 3 archivos (reglas de apuestas, casino y usuarios, y transformación de cuotas)
+cd front && npm test        # 39 pruebas en 4 archivos (boleto, blackjack, ruleta, tragamonedas, cuenta y formato)
 ```
 
 Las pruebas cubren reglas de negocio y casos límite (monto en el mínimo, lista vacía, As que baja de 11 a 1, contraseña de longitud exacta). Las reglas viven en `logica/` y no dependen de React ni de Express, por eso se prueban sin levantar nada.
 
 ## Despliegue
 
-El front compilado se sirve desde un bucket público de S3 y la API corre en una instancia EC2. Los pasos completos están en [`docs/despliegue.md`](docs/despliegue.md).
+El front compilado se sirve desde un bucket público de S3 y la API corre en una instancia EC2. Los pasos completos están en [`docs/despliegue.md`](docs/despliegue.md) y el script de la instancia en [`docs/user-data.sh`](docs/user-data.sh).
 
 | Recurso | Valor |
 |---|---|
@@ -129,16 +131,22 @@ El front compilado se sirve desde un bucket público de S3 y la API corre en una
 
 Resumen del procedimiento:
 
-1. Subir el `.env` del back al bucket privado (`credenciales/backend.env`) con `CORS_ORIGIN` igual a la URL del sitio de S3, sin barra final.
+1. Subir el `.env` del back al bucket privado (`credenciales/backend.env`) con `CORS_ORIGIN` igual a la URL del sitio de S3, sin barra final y con el nombre de la variable una sola vez.
 2. Lanzar la EC2 con el script de `docs/user-data.sh`: instala Node, baja el repo (`dev`), lee el `.env` desde S3 con el rol del laboratorio y deja la API como servicio.
 3. Comprobar `http://IP:3000/api/salud` y el CORS con `curl.exe -i -H "Origin: <URL del sitio>" http://IP:3000/api/salud`.
 4. En `front/`, crear `.env.production` con `VITE_API_URL=http://IP:3000`, hacer `npm run build` y subir el **contenido** de `dist/` al bucket del sitio.
 5. Tomar las evidencias y **terminar la instancia** (no dejarla encendida).
 
-Notas: el sitio usa HTTP (endpoint web de S3). La IP pública cambia si la instancia se detiene, por lo que hay que recompilar el front. En EC2 no corre el cron diario de sincronización, así que los eventos se actualizan llamando a las rutas de `/admin/sync*`.
+**Estado:** el despliegue se probó y se documentó el 23 de noviembre de 2026 (evidencias en `WAGERLINE_Evidencias_Despliegue.pdf`, parte del documento de entrega). Al cerrar los recursos la instancia se termina, así que el sitio de S3 sigue abierto pero ya no puede traer datos de la API; para volver a desplegar se repiten los pasos de arriba.
+
+Notas:
+- El sitio usa HTTP (endpoint web de S3). La IP pública cambia si la instancia se detiene, por lo que hay que recompilar el front.
+- Sin SSH, la instancia se administra con el Administrador de sesiones de SSM. Para cambiar el `.env`: subir el archivo nuevo a `credenciales/`, copiarlo con `aws s3 cp` a `/opt/wagerline/backend/.env` y ejecutar `sudo systemctl restart wagerline`.
+- En EC2 no corre el cron diario de sincronización; los eventos se actualizan llamando a las rutas de `/admin/sync*`, y mientras tanto las cuotas pueden estar desactualizadas.
 
 ### Seguridad y dependencias
 
 - Validación en el servidor en todas las rutas que reciben datos; los secretos viven fuera de Git (`.env` en el `.gitignore` y `.env.example` con valores de mentira); CORS restringido al sitio de S3; Security Group con una sola regla y SSH cerrado.
+- La publishable key es pública por diseño: lo que protege los datos son las políticas RLS de Supabase. La clave secreta solo vive en el `.env` del back y en el bucket privado.
 - **npm audit (front):** 6 vulnerabilidades (3 moderate, 1 high, 2 critical), todas en dependencias de desarrollo (vite/esbuild y vitest). No entran al build que se sube a S3. No se aplicó `npm audit fix --force` porque implica actualizar a versiones mayores con cambios incompatibles.
 - **npm audit (back):** `npm audit` (back, 23/11/2026): reporta 6 vulnerabilidades (3 moderadas, 1 alta, 2 críticas), todas en `vitest` y sus dependencias (herramienta de pruebas, solo desarrollo); `npm audit --omit=dev` reporta 0, así que no afectan producción. Corregirlas exige actualizar vitest a una versión mayor (cambio incompatible).
