@@ -27,8 +27,6 @@ docs/      ADR-001 (diseño del almacenamiento en S3), guía de despliegue y scr
 db/        funciones SQL (ruleta_spin.sql)
 ```
 
-> Las carpetas `api/`, `public/`, `sistema-academico/` y los archivos sueltos de la raíz son del monolito anterior; `backend/` y `front/` los reemplazan.
-
 ## Cómo levantarlo en local
 
 Requisitos: Node 22 o superior y un proyecto de Supabase.
@@ -111,7 +109,7 @@ Los errores de validación responden con el formato `{ "error": "mensaje claro" 
 ## Cómo correr las pruebas
 
 ```bash
-cd backend && npm test      # 33 pruebas en 3 archivos (reglas de apuestas, casino y usuarios, y transformación de cuotas)
+cd backend && npm test      # 31 pruebas en 3 archivos (reglas de apuestas, casino y usuarios, y transformación de cuotas)
 cd front && npm test        # 39 pruebas en 4 archivos (boleto, blackjack, ruleta, tragamonedas, cuenta y formato)
 ```
 
